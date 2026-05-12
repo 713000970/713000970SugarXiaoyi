@@ -3,5 +3,12 @@
   "framework": null,
   "installCommand": "npm install",
   "buildCommand": "npm run build",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "redirects": [
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.svg",
+      "permanent": false
+    }
+  ]
 }

@@ -1,12 +1,12 @@
 /**
- * 与根目录 generate-html.mjs 同步；ROOT 为上一级目录（项目根）
+ * 从 Markdown 生成 weekly-html 与 周报中心.html（放在仓库根目录，便于 GitHub 网页上传；Vercel 与本机 npm run build 共用）
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname);
 
 function convertLinks(text) {
   return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
@@ -118,6 +118,7 @@ function writeHtmlPage(title, bodyHtml, outputPath) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <style>
     body { font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; margin: 0; background: #f6f8fb; color: #1f2a37; }
     .container { max-width: 980px; margin: 24px auto; padding: 24px; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
@@ -248,6 +249,7 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>教辅行业与K12动态周报中心</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <style>
     :root {
       --bg0: #faf6f1;
@@ -287,29 +289,41 @@ function writeCenterDashboard(weeklyItems, outputPath) {
       letter-spacing: 0.06em;
       color: var(--muted);
     }
-    .week-strip {
+    .week-picker {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
       align-items: center;
+      gap: 12px 16px;
+      margin-top: 4px;
     }
-    .week-pill {
-      border: 1px solid var(--line);
-      background: var(--paper);
+    .week-select-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #4a3728;
+      flex-shrink: 0;
+    }
+    .week-select {
+      flex: 1;
+      min-width: 200px;
+      max-width: 420px;
+      font-family: inherit;
+      font-size: 0.95rem;
       color: var(--ink);
-      border-radius: 999px;
-      padding: 10px 18px;
-      font-size: 0.92rem;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 40px 12px 14px;
       cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
-      box-shadow: 0 2px 8px rgba(61,46,34,0.04);
+      box-shadow: 0 2px 10px rgba(61,46,34,0.06);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237a6e63' d='M1 1l5 5 5-5' stroke='%237a6e63' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
     }
-    .week-pill:hover { background: #fff; box-shadow: 0 4px 14px rgba(61,46,34,0.08); }
-    .week-pill.active {
-      background: linear-gradient(135deg, #c9885c, #b8734a);
-      color: #fffdf9;
-      border-color: transparent;
-      box-shadow: 0 6px 18px rgba(184, 115, 74, 0.35);
+    .week-select:hover, .week-select:focus {
+      border-color: rgba(184, 115, 74, 0.45);
+      outline: none;
+      box-shadow: 0 4px 14px rgba(61,46,34,0.08);
     }
     .board-wrap {
       margin-top: 18px;
@@ -380,6 +394,7 @@ function writeCenterDashboard(weeklyItems, outputPath) {
       color: #5c4a3d;
     }
     .muted { color: var(--muted); font-size: 0.92rem; }
+    .muted-empty { margin-left: 4px; }
     .toolbar { margin: 8px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
       border: 1px solid var(--line);
@@ -427,11 +442,14 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:00 自动更新。选择下方<strong>周期</strong>可切换各周；当前周期按<strong>板块</strong>速览正文节选。底部可按标签筛选历史卡片。</p>
+      <p>每周一 10:00 自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。底部可按标签筛选历史卡片。</p>
     </section>
 
-    <p class="section-label">当前展示 · 按周期</p>
-    <div class="week-strip" id="weekStrip" role="tablist" aria-label="选择周报周期"></div>
+    <p class="section-label">当前展示 · 选择周期</p>
+    <div class="week-picker" id="weekPickerWrap">
+      <label class="week-select-label" for="weekSelect">周报周期</label>
+      <select id="weekSelect" class="week-select" aria-label="选择要浏览的周报周期"></select>
+    </div>
 
     <div class="board-wrap">
       <div class="board-meta" id="boardMeta"></div>
@@ -458,7 +476,7 @@ ${cardsHtml}
   <script>
     const WEEKLY_DATA = JSON.parse(document.getElementById('weekly-data').textContent);
     (function () {
-      const strip = document.getElementById('weekStrip');
+      const weekSelect = document.getElementById('weekSelect');
       const meta = document.getElementById('boardMeta');
       const panels = document.getElementById('boardPanels');
       let active = 0;
@@ -471,31 +489,28 @@ ${cardsHtml}
           .replace(/"/g, '&quot;');
       }
 
-      function renderWeekStrip() {
+      function renderWeekSelect() {
         if (!WEEKLY_DATA.length) {
-          strip.innerHTML = '<span class="muted">暂无周报数据</span>';
+          weekSelect.innerHTML = '';
+          weekSelect.disabled = true;
+          var wrap = document.getElementById('weekPickerWrap');
+          if (wrap && !wrap.querySelector('.muted-empty')) {
+            var sp = document.createElement('span');
+            sp.className = 'muted muted-empty';
+            sp.textContent = '暂无周报数据';
+            wrap.appendChild(sp);
+          }
           return;
         }
-        strip.innerHTML = WEEKLY_DATA.map(function (w, i) {
-          return (
-            '<button type="button" class="week-pill' + (i === 0 ? ' active' : '') + '" data-i="' +
-            i +
-            '" role="tab" aria-selected="' +
-            (i === 0) +
-            '">' +
-            esc(w.title) +
-            '</button>'
-          );
+        weekSelect.disabled = false;
+        weekSelect.innerHTML = WEEKLY_DATA.map(function (w, i) {
+          return '<option value="' + i + '">' + esc(w.title) + '</option>';
         }).join('');
-        strip.querySelectorAll('.week-pill').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            active = +btn.getAttribute('data-i');
-            strip.querySelectorAll('.week-pill').forEach(function (b, j) {
-              b.classList.toggle('active', j === active);
-              b.setAttribute('aria-selected', j === active);
-            });
-            renderBoard();
-          });
+        weekSelect.value = String(active);
+        weekSelect.addEventListener('change', function () {
+          active = +weekSelect.value;
+          if (!Number.isFinite(active) || active < 0 || active >= WEEKLY_DATA.length) active = 0;
+          renderBoard();
         });
       }
 
@@ -529,7 +544,7 @@ ${cardsHtml}
           .join('');
       }
 
-      renderWeekStrip();
+      renderWeekSelect();
       renderBoard();
 
       var chips = Array.from(document.querySelectorAll('.toolbar .chip'));
