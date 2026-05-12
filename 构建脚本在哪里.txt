@@ -1,0 +1,20 @@
+【周报网站构建脚本在哪里】
+
+Vercel 执行的是：npm run build → node build.mjs
+
+build.mjs 会自动找下面任意一个（有哪个用哪个）：
+  1) generate-html.mjs
+  2) 生成-html.mjs（中文文件名，GitHub 网页上传时常变成这个名字）
+  3) scripts/generate-html.mjs
+
+上传到 GitHub 时至少需要：build.mjs + package.json + 上面任一脚本。
+
+周报 md 可以放在 weekly/ 文件夹里，也可以像你现在这样放在仓库根目录：
+  2026-W17-周报.md、2026-W18-周报.md ……（构建脚本已兼容）。
+
+在资源管理器里怎么找：
+  1. 地址栏粘贴：C:\Users\DELL\.cursor\行业动态
+  2. 按键盘 Ctrl+F 搜索：generate-html
+  3. 或打开左侧「scripts」文件夹，里面应有 generate-html.mjs
+
+若整个文件夹里没有这些文件：在 Cursor 里打开本工程，等同步完成；或从另一台电脑/备份里复制整个「行业动态」文件夹。

@@ -1,0 +1,12 @@
+{
+  "name": "k12-weekly-industry",
+  "private": true,
+  "description": "教辅行业与K12动态周报（静态站点，可部署 Vercel）",
+  "scripts": {
+    "build": "node build.mjs",
+    "weekly:create": "node scripts/create-weekly-report.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

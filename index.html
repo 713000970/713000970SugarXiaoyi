@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>教辅行业与K12动态周报中心</title>
+  <style>
+    body { font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; margin: 0; background: #f4f7fb; color: #0f172a; }
+    .container { max-width: 1080px; margin: 24px auto; padding: 0 16px 24px; }
+    .hero { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 10px 24px rgba(37,99,235,0.25); }
+    .hero h1 { margin: 0 0 8px; font-size: 28px; }
+    .hero p { margin: 0; opacity: 0.95; }
+    .toolbar { margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { border: 1px solid #cbd5e1; background: #fff; color: #1e293b; border-radius: 999px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
+    .chip.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; box-shadow: 0 2px 10px rgba(15,23,42,0.04); }
+    .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .card h3 { margin: 0; font-size: 18px; }
+    .card p { color: #334155; line-height: 1.7; min-height: 44px; }
+    .card a { color: #2563eb; text-decoration: none; font-size: 14px; }
+    .card a:hover { text-decoration: underline; }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 12px; padding: 3px 10px; }
+    .footer { margin-top: 16px; color: #475569; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <h1>教辅行业与K12动态周报中心</h1>
+      <p>每周一 10:00 自动更新，支持按政策、展会、平台、K12 分类浏览。</p>
+    </section>
+
+    <section class="toolbar">
+      <button class="chip active" data-filter="all">全部</button>
+      <button class="chip" data-filter="policy">政策</button>
+      <button class="chip" data-filter="expo">展会</button>
+      <button class="chip" data-filter="platform">平台</button>
+      <button class="chip" data-filter="k12">K12</button>
+    </section>
+
+    <section class="grid" id="weeklyGrid">
+<article class="card" data-tags="policy expo platform k12">
+  <div class="card-head">
+    <h3>2026-W20-周报</h3>
+    <a href="weekly-html/2026-W20-周报.html" target="_self">查看详情</a>
+  </div>
+  <p>第34届全国图书交易博览会定于 **7月24日至27日** 在杭州举办（主会场杭州国际博览中心），教辅与少儿读物相关企业进入会务筹备与首发策划窗口。</p>
+  <div class="tags"><span class="tag">政策</span><span class="tag">展会</span><span class="tag">平台</span><span class="tag">K12</span></div>
+</article>
+<article class="card" data-tags="policy platform k12">
+  <div class="card-head">
+    <h3>2026-W19-周报</h3>
+    <a href="weekly-html/2026-W19-周报.html" target="_self">查看详情</a>
+  </div>
+  <p>上海等地公办/民办小学网上报名窗口于本周集中开启（典型窗口含 5 月 7 日至 11 日），义务教育招生进入家长侧“高频办理周”，咨询、材料核验与系统并发压力显著抬升。</p>
+  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
+</article>
+<article class="card" data-tags="policy platform k12">
+  <div class="card-head">
+    <h3>2026-W18-周报</h3>
+    <a href="weekly-html/2026-W18-周报.html" target="_self">查看详情</a>
+  </div>
+  <p>教育部“阳光招生专项行动（2026年）”执行要求持续传导，普通高中招生治理与关键环节风控成为本周关注重点。</p>
+  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
+</article>
+<article class="card" data-tags="policy platform k12">
+  <div class="card-head">
+    <h3>2026-W17-周报</h3>
+    <a href="weekly-html/2026-W17-周报.html" target="_self">查看详情</a>
+  </div>
+  <p>教育部发布《中国青少年阅读素养框架》教育行业标准（JY/T 0663-2026），阅读能力评价与教学资源建设进入标准化阶段。</p>
+  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
+</article>
+    </section>
+
+    <p class="footer">入口固定在本页；每周详情保存在 weekly-html 目录。</p>
+  </main>
+
+  <script>
+    const chips = Array.from(document.querySelectorAll('.chip'));
+    const cards = Array.from(document.querySelectorAll('.card'));
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const filter = chip.getAttribute('data-filter');
+        cards.forEach(card => {
+          const tags = card.getAttribute('data-tags') || '';
+          card.style.display = (filter === 'all' || tags.includes(filter)) ? '' : 'none';
+        });
+      });
+    });
+  </script>
+</body>
+</html>

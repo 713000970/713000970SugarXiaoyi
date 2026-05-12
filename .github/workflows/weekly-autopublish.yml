@@ -1,0 +1,50 @@
+# 北京时间每周一 10:00：从模板生成当周周报骨架、更新「周报索引」、npm run build，若有变更则推送以触发 Vercel 部署。
+# 依赖：仓库 Settings → Actions → General → Workflow permissions 勾选「Read and write permissions」。
+
+name: Weekly skeleton and publish
+
+on:
+  schedule:
+    # 北京时间周一 10:00 = UTC 周一 02:00（中国标准时间无夏令时）
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-autopublish
+  cancel-in-progress: true
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create weekly skeleton and rebuild site
+        run: node scripts/create-weekly-report.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit (skeleton already present or only unrelated noise)."
+            exit 0
+          fi
+          git commit -m "chore(weekly): auto skeleton $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
