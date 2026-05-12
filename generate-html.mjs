@@ -1,12 +1,12 @@
 /**
- * 从 Markdown 生成 weekly-html 与 周报中心.html（放在仓库根目录，便于 GitHub 网页上传；Vercel 与本机 npm run build 共用）
+ * 与根目录 generate-html.mjs 同步；ROOT 为上一级目录（项目根）
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname);
+const ROOT = path.resolve(__dirname, '..');
 
 function convertLinks(text) {
   return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
