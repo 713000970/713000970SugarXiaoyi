@@ -31,36 +31,54 @@ function convertInlineMarkdown(text) {
 function convertMarkdownToHtml(markdownText) {
   const lines = markdownText.split(/\r?\n/);
   const output = [];
-  let inUl = false;
   let inOl = false;
+  /** 当前「- 列表」嵌套深度，0 表示在最外层 ul 的第一个 li 层级，-1 表示不在列表中 */
+  let listDepth = -1;
 
-  const closeLists = () => {
-    if (inUl) {
-      output.push('</ul>');
-      inUl = false;
+  const closeUlLists = () => {
+    while (listDepth >= 0) {
+      output.push('</li></ul>');
+      listDepth--;
     }
+    listDepth = -1;
+  };
+
+  const closeAllLists = () => {
     if (inOl) {
       output.push('</ol>');
       inOl = false;
     }
+    closeUlLists();
   };
+
+  /** 行首空格数（tab 按 2 格），用于 Markdown 列表嵌套：每 2 空格一级 */
+  function countLeadingSpaces(line) {
+    let n = 0;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === ' ') n += 1;
+      else if (c === '\t') n += 2;
+      else break;
+    }
+    return n;
+  }
 
   for (const line of lines) {
     const trim = line.trim();
 
     if (!trim) {
-      closeLists();
+      closeAllLists();
       continue;
     }
 
     if (trim === '---') {
-      closeLists();
+      closeAllLists();
       output.push('<hr />');
       continue;
     }
 
     if (trim.startsWith('>')) {
-      closeLists();
+      closeAllLists();
       const quote = convertInlineMarkdown(trim.slice(1).trim());
       output.push(`<blockquote>${quote}</blockquote>`);
       continue;
@@ -68,7 +86,7 @@ function convertMarkdownToHtml(markdownText) {
 
     const hm = trim.match(/^(#{1,6})\s+(.+)$/);
     if (hm) {
-      closeLists();
+      closeAllLists();
       const level = hm[1].length;
       const content = convertInlineMarkdown(hm[2]);
       output.push(`<h${level}>${content}</h${level}>`);
@@ -77,10 +95,7 @@ function convertMarkdownToHtml(markdownText) {
 
     const olm = trim.match(/^\d+\.\s+(.+)$/);
     if (olm) {
-      if (inUl) {
-        output.push('</ul>');
-        inUl = false;
-      }
+      closeUlLists();
       if (!inOl) {
         output.push('<ol>');
         inOl = true;
@@ -89,25 +104,51 @@ function convertMarkdownToHtml(markdownText) {
       continue;
     }
 
-    const ulm = trim.match(/^-\s+(.+)$/);
-    if (ulm) {
+    const ulMatch = line.match(/^(\s*)-\s+(.+)$/);
+    if (ulMatch) {
       if (inOl) {
         output.push('</ol>');
         inOl = false;
       }
-      if (!inUl) {
+      const spaces = countLeadingSpaces(line);
+      const depth = Math.min(Math.floor(spaces / 2), 32);
+      const itemHtml = convertInlineMarkdown(ulMatch[2]);
+
+      if (listDepth < 0) {
         output.push('<ul>');
-        inUl = true;
+        output.push(`<li>${itemHtml}`);
+        listDepth = depth;
+        continue;
       }
-      output.push(`<li>${convertInlineMarkdown(ulm[1])}</li>`);
+
+      if (depth === listDepth) {
+        output.push(`</li><li>${itemHtml}`);
+        continue;
+      }
+
+      if (depth > listDepth) {
+        let effDepth = depth;
+        if (effDepth > listDepth + 1) effDepth = listDepth + 1;
+        output.push('<ul>');
+        output.push(`<li>${itemHtml}`);
+        listDepth = effDepth;
+        continue;
+      }
+
+      while (listDepth > depth) {
+        output.push('</li></ul>');
+        listDepth--;
+      }
+      output.push(`</li><li>${itemHtml}`);
+      listDepth = depth;
       continue;
     }
 
-    closeLists();
+    closeAllLists();
     output.push(`<p>${convertInlineMarkdown(trim)}</p>`);
   }
 
-  closeLists();
+  closeAllLists();
   return output.join('\n');
 }
 
@@ -125,7 +166,12 @@ function writeHtmlPage(title, bodyHtml, outputPath) {
     h1, h2, h3, h4 { color: #0f172a; margin-top: 1.1em; }
     h1 { margin-top: 0; }
     p, li, blockquote { line-height: 1.75; }
-    ul, ol { padding-left: 24px; }
+    ul, ol { padding-left: 1.35em; margin: 0.5em 0; }
+    ul { list-style-type: disc; }
+    ul ul { list-style-type: circle; margin: 0.35em 0 0.35em 0; }
+    ul ul ul { list-style-type: square; }
+    li > ul { margin-top: 0.4em; margin-bottom: 0.2em; }
+    li { margin: 0.25em 0; }
     a { color: #2563eb; text-decoration: none; }
     a:hover { text-decoration: underline; }
     blockquote { border-left: 4px solid #93c5fd; margin: 12px 0; padding: 8px 12px; background: #eff6ff; color: #1e3a8a; }
@@ -383,8 +429,12 @@ function writeCenterDashboard(weeklyItems, outputPath) {
       line-height: 1.65;
     }
     .panel-body :first-child { margin-top: 0; }
-    .panel-body ul, .panel-body ol { margin: 0.4em 0; padding-left: 1.25em; }
-    .panel-body li { margin: 0.25em 0; }
+    .panel-body ul, .panel-body ol { margin: 0.45em 0; padding-left: 1.35em; }
+    .panel-body ul { list-style-type: disc; }
+    .panel-body ul ul { list-style-type: circle; margin: 0.35em 0; }
+    .panel-body ul ul ul { list-style-type: square; }
+    .panel-body li > ul { margin-top: 0.4em; margin-bottom: 0.15em; }
+    .panel-body li { margin: 0.2em 0; }
     .panel-body a { color: var(--accent); }
     .panel-body blockquote {
       margin: 8px 0;
