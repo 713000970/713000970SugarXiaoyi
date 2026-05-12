@@ -174,7 +174,56 @@ function getWeeklyTags(markdownText) {
   return [...tagSet].join(' ');
 }
 
+const SECTION_BODY_MAX = 4000;
+
+/**
+ * 按二级标题 ## 拆成板块（不含单独的 # 一级标题行），用于首页分块展示。
+ */
+function parseWeeklySections(markdownText, maxBodyChars) {
+  const limit = maxBodyChars ?? SECTION_BODY_MAX;
+  const lines = markdownText.split(/\r?\n/);
+  const sections = [];
+  let i = 0;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (/^##\s/.test(trimmed) && !/^###\s/.test(trimmed)) {
+      const heading = trimmed.replace(/^##\s+/, '').replace(/\*\*/g, '').trim();
+      i++;
+      const bodyLines = [];
+      while (i < lines.length) {
+        const t = lines[i].trim();
+        if (/^##\s/.test(t) && !/^###\s/.test(t)) break;
+        bodyLines.push(lines[i]);
+        i++;
+      }
+      let bodyMd = bodyLines.join('\n').trim();
+      if (bodyMd.length > limit) {
+        bodyMd =
+          bodyMd.slice(0, limit) +
+          '\n\n> …… 以上为节选，完整内容请点击下方「查看完整周报」。';
+      }
+      sections.push({
+        heading,
+        bodyHtml: convertMarkdownToHtml(bodyMd),
+      });
+      continue;
+    }
+    i++;
+  }
+  return sections;
+}
+
 function writeCenterDashboard(weeklyItems, outputPath) {
+  const payload = weeklyItems.map((w) => ({
+    title: w.title,
+    href: w.href,
+    summary: w.summary,
+    tags: w.tags,
+    sections: w.sections || [],
+  }));
+  const payloadJson = JSON.stringify(payload);
+  const payloadHtmlSafe = payloadJson.replace(/</g, '\\u003c');
+
   const cardsHtml = weeklyItems
     .map((item) => {
       const labels = [];
@@ -182,7 +231,7 @@ function writeCenterDashboard(weeklyItems, outputPath) {
       if (item.tags.includes('expo')) labels.push('<span class="tag">展会</span>');
       if (item.tags.includes('platform')) labels.push('<span class="tag">平台</span>');
       if (item.tags.includes('k12')) labels.push('<span class="tag">K12</span>');
-      return `<article class="card" data-tags="${item.tags}">
+      return `<article class="card" data-tags="${item.tags}" data-week="${item.title}">
   <div class="card-head">
     <h3>${item.title}</h3>
     <a href="${item.href}" target="_self">查看详情</a>
@@ -200,62 +249,305 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>教辅行业与K12动态周报中心</title>
   <style>
-    body { font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; margin: 0; background: #f4f7fb; color: #0f172a; }
-    .container { max-width: 1080px; margin: 24px auto; padding: 0 16px 24px; }
-    .hero { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 10px 24px rgba(37,99,235,0.25); }
-    .hero h1 { margin: 0 0 8px; font-size: 28px; }
-    .hero p { margin: 0; opacity: 0.95; }
-    .toolbar { margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { border: 1px solid #cbd5e1; background: #fff; color: #1e293b; border-radius: 999px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
-    .chip.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; box-shadow: 0 2px 10px rgba(15,23,42,0.04); }
+    :root {
+      --bg0: #faf6f1;
+      --bg1: #f3ebe4;
+      --paper: #fffdf9;
+      --ink: #3d3429;
+      --muted: #7a6e63;
+      --accent: #b8734a;
+      --accent2: #c9986b;
+      --leaf: #6d8f6a;
+      --line: rgba(61, 52, 41, 0.1);
+      --shadow: 0 12px 40px rgba(61, 46, 34, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: linear-gradient(165deg, var(--bg0) 0%, var(--bg1) 55%, #ebe3d9 100%);
+    }
+    .container { max-width: 1040px; margin: 0 auto; padding: 28px 18px 40px; }
+    .hero {
+      background: linear-gradient(125deg, #f0e4d8 0%, #e6d0bc 42%, #d9b896 100%);
+      color: #3d2a1f;
+      border-radius: 22px;
+      padding: 26px 26px 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.55);
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 1.65rem; font-weight: 650; letter-spacing: 0.02em; }
+    .hero p { margin: 0; color: #5c4a3d; line-height: 1.65; font-size: 0.98rem; }
+    .section-label {
+      margin: 28px 0 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .week-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .week-pill {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+      box-shadow: 0 2px 8px rgba(61,46,34,0.04);
+    }
+    .week-pill:hover { background: #fff; box-shadow: 0 4px 14px rgba(61,46,34,0.08); }
+    .week-pill.active {
+      background: linear-gradient(135deg, #c9885c, #b8734a);
+      color: #fffdf9;
+      border-color: transparent;
+      box-shadow: 0 6px 18px rgba(184, 115, 74, 0.35);
+    }
+    .board-wrap {
+      margin-top: 18px;
+      background: var(--paper);
+      border-radius: 20px;
+      padding: 22px 22px 8px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .board-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed var(--line);
+    }
+    .board-lead { margin: 0; flex: 1; min-width: 200px; color: #52473d; line-height: 1.75; font-size: 0.96rem; }
+    .link-full {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: rgba(109, 143, 106, 0.14);
+      color: var(--leaf);
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(109, 143, 106, 0.35);
+      white-space: nowrap;
+    }
+    .link-full:hover { background: rgba(109, 143, 106, 0.22); }
+    .board-panels { display: flex; flex-direction: column; gap: 14px; }
+    .panel {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fffefb 0%, #fff9f3 100%);
+      overflow: hidden;
+    }
+    .panel-title {
+      margin: 0;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 650;
+      color: #4a3728;
+      background: rgba(232, 200, 168, 0.35);
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-body {
+      padding: 12px 16px 16px;
+      font-size: 0.9rem;
+      color: #52473d;
+      max-height: 320px;
+      overflow-y: auto;
+      line-height: 1.65;
+    }
+    .panel-body :first-child { margin-top: 0; }
+    .panel-body ul, .panel-body ol { margin: 0.4em 0; padding-left: 1.25em; }
+    .panel-body li { margin: 0.25em 0; }
+    .panel-body a { color: var(--accent); }
+    .panel-body blockquote {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-left: 3px solid var(--accent2);
+      background: rgba(232, 200, 168, 0.2);
+      color: #5c4a3d;
+    }
+    .muted { color: var(--muted); font-size: 0.92rem; }
+    .toolbar { margin: 8px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background 0.2s;
+    }
+    .chip.active {
+      background: rgba(184, 115, 74, 0.18);
+      border-color: rgba(184, 115, 74, 0.45);
+      color: #6b3d24;
+      font-weight: 600;
+    }
+    .archive-head { margin-top: 32px; margin-bottom: 12px; font-size: 1.05rem; color: #4a3728; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 14px; }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(61,46,34,0.05);
+    }
     .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-    .card h3 { margin: 0; font-size: 18px; }
-    .card p { color: #334155; line-height: 1.7; min-height: 44px; }
-    .card a { color: #2563eb; text-decoration: none; font-size: 14px; }
+    .card h3 { margin: 0; font-size: 1.02rem; color: #3d2a1f; }
+    .card p { color: #5c4a3d; line-height: 1.7; min-height: 40px; font-size: 0.9rem; margin: 10px 0 0; }
+    .card a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
     .card a:hover { text-decoration: underline; }
-    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-    .tag { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 12px; padding: 3px 10px; }
-    .footer { margin-top: 16px; color: #475569; font-size: 13px; }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .tag {
+      background: rgba(109, 143, 106, 0.12);
+      color: #3d5a3a;
+      border: 1px solid rgba(109, 143, 106, 0.28);
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 3px 10px;
+    }
+    .footer { margin-top: 28px; color: var(--muted); font-size: 0.86rem; text-align: center; line-height: 1.6; }
   </style>
 </head>
 <body>
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:00 自动更新，支持按政策、展会、平台、K12 分类浏览。</p>
+      <p>每周一 10:00 自动更新。选择下方<strong>周期</strong>可切换各周；当前周期按<strong>板块</strong>速览正文节选。底部可按标签筛选历史卡片。</p>
     </section>
 
-    <section class="toolbar">
-      <button class="chip active" data-filter="all">全部</button>
-      <button class="chip" data-filter="policy">政策</button>
-      <button class="chip" data-filter="expo">展会</button>
-      <button class="chip" data-filter="platform">平台</button>
-      <button class="chip" data-filter="k12">K12</button>
-    </section>
+    <p class="section-label">当前展示 · 按周期</p>
+    <div class="week-strip" id="weekStrip" role="tablist" aria-label="选择周报周期"></div>
 
+    <div class="board-wrap">
+      <div class="board-meta" id="boardMeta"></div>
+      <div class="board-panels" id="boardPanels"></div>
+    </div>
+
+    <p class="section-label">历史周期 · 按标签筛选</p>
+    <section class="toolbar" aria-label="内容标签">
+      <button type="button" class="chip active" data-filter="all">全部</button>
+      <button type="button" class="chip" data-filter="policy">政策</button>
+      <button type="button" class="chip" data-filter="expo">展会</button>
+      <button type="button" class="chip" data-filter="platform">平台</button>
+      <button type="button" class="chip" data-filter="k12">K12</button>
+    </section>
+    <h2 class="archive-head">各周期入口</h2>
     <section class="grid" id="weeklyGrid">
 ${cardsHtml}
     </section>
 
-    <p class="footer">入口固定在本页；每周详情保存在 weekly-html 目录。</p>
+    <p class="footer">完整排版与外链请以各周「查看详情」页为准；本页板块为节选便于快速浏览。</p>
   </main>
 
+  <script type="application/json" id="weekly-data">${payloadHtmlSafe}</script>
   <script>
-    const chips = Array.from(document.querySelectorAll('.chip'));
-    const cards = Array.from(document.querySelectorAll('.card'));
-    chips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        chips.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        const filter = chip.getAttribute('data-filter');
-        cards.forEach(card => {
-          const tags = card.getAttribute('data-tags') || '';
-          card.style.display = (filter === 'all' || tags.includes(filter)) ? '' : 'none';
+    const WEEKLY_DATA = JSON.parse(document.getElementById('weekly-data').textContent);
+    (function () {
+      const strip = document.getElementById('weekStrip');
+      const meta = document.getElementById('boardMeta');
+      const panels = document.getElementById('boardPanels');
+      let active = 0;
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function renderWeekStrip() {
+        if (!WEEKLY_DATA.length) {
+          strip.innerHTML = '<span class="muted">暂无周报数据</span>';
+          return;
+        }
+        strip.innerHTML = WEEKLY_DATA.map(function (w, i) {
+          return (
+            '<button type="button" class="week-pill' + (i === 0 ? ' active' : '') + '" data-i="' +
+            i +
+            '" role="tab" aria-selected="' +
+            (i === 0) +
+            '">' +
+            esc(w.title) +
+            '</button>'
+          );
+        }).join('');
+        strip.querySelectorAll('.week-pill').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            active = +btn.getAttribute('data-i');
+            strip.querySelectorAll('.week-pill').forEach(function (b, j) {
+              b.classList.toggle('active', j === active);
+              b.setAttribute('aria-selected', j === active);
+            });
+            renderBoard();
+          });
+        });
+      }
+
+      function renderBoard() {
+        var w = WEEKLY_DATA[active];
+        if (!w) {
+          meta.innerHTML = '';
+          panels.innerHTML = '<p class="muted">无数据</p>';
+          return;
+        }
+        meta.innerHTML =
+          '<p class="board-lead">' +
+          w.summary +
+          '</p><a class="link-full" href="' +
+          esc(w.href) +
+          '">查看完整周报 →</a>';
+        if (!w.sections || !w.sections.length) {
+          panels.innerHTML = '<p class="muted">本周期 Markdown 中暂无「##」分节，请直接打开完整周报。</p>';
+          return;
+        }
+        panels.innerHTML = w.sections
+          .map(function (s) {
+            return (
+              '<section class="panel"><h3 class="panel-title">' +
+              esc(s.heading) +
+              '</h3><div class="panel-body">' +
+              s.bodyHtml +
+              '</div></section>'
+            );
+          })
+          .join('');
+      }
+
+      renderWeekStrip();
+      renderBoard();
+
+      var chips = Array.from(document.querySelectorAll('.toolbar .chip'));
+      var cards = Array.from(document.querySelectorAll('.card'));
+      chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          chips.forEach(function (c) {
+            c.classList.remove('active');
+          });
+          chip.classList.add('active');
+          var filter = chip.getAttribute('data-filter');
+          cards.forEach(function (card) {
+            var tags = card.getAttribute('data-tags') || '';
+            card.style.display = filter === 'all' || tags.includes(filter) ? '' : 'none';
+          });
         });
       });
-    });
+    })();
   </script>
 </body>
 </html>`;
@@ -332,6 +624,7 @@ function main() {
       summary: convertInlineMarkdown(getWeeklySummary(md)),
       tags: getWeeklyTags(md),
       href: `weekly-html/${htmlName}`,
+      sections: parseWeeklySections(md),
     });
   }
 

@@ -4,7 +4,9 @@
   "description": "教辅行业与K12动态周报（静态站点，可部署 Vercel）",
   "scripts": {
     "build": "node build.mjs",
-    "weekly:create": "node scripts/create-weekly-report.mjs"
+    "weekly:create": "node scripts/run-weekly-full.mjs",
+    "weekly:skeleton": "node scripts/create-weekly-report.mjs",
+    "weekly:digest": "node scripts/append-weekly-digest.mjs"
   },
   "engines": {
     "node": ">=18"

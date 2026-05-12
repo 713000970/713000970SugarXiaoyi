@@ -5,43 +5,206 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>教辅行业与K12动态周报中心</title>
   <style>
-    body { font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; margin: 0; background: #f4f7fb; color: #0f172a; }
-    .container { max-width: 1080px; margin: 24px auto; padding: 0 16px 24px; }
-    .hero { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 10px 24px rgba(37,99,235,0.25); }
-    .hero h1 { margin: 0 0 8px; font-size: 28px; }
-    .hero p { margin: 0; opacity: 0.95; }
-    .toolbar { margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { border: 1px solid #cbd5e1; background: #fff; color: #1e293b; border-radius: 999px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
-    .chip.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; box-shadow: 0 2px 10px rgba(15,23,42,0.04); }
+    :root {
+      --bg0: #faf6f1;
+      --bg1: #f3ebe4;
+      --paper: #fffdf9;
+      --ink: #3d3429;
+      --muted: #7a6e63;
+      --accent: #b8734a;
+      --accent2: #c9986b;
+      --leaf: #6d8f6a;
+      --line: rgba(61, 52, 41, 0.1);
+      --shadow: 0 12px 40px rgba(61, 46, 34, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: linear-gradient(165deg, var(--bg0) 0%, var(--bg1) 55%, #ebe3d9 100%);
+    }
+    .container { max-width: 1040px; margin: 0 auto; padding: 28px 18px 40px; }
+    .hero {
+      background: linear-gradient(125deg, #f0e4d8 0%, #e6d0bc 42%, #d9b896 100%);
+      color: #3d2a1f;
+      border-radius: 22px;
+      padding: 26px 26px 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.55);
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 1.65rem; font-weight: 650; letter-spacing: 0.02em; }
+    .hero p { margin: 0; color: #5c4a3d; line-height: 1.65; font-size: 0.98rem; }
+    .section-label {
+      margin: 28px 0 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .week-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .week-pill {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+      box-shadow: 0 2px 8px rgba(61,46,34,0.04);
+    }
+    .week-pill:hover { background: #fff; box-shadow: 0 4px 14px rgba(61,46,34,0.08); }
+    .week-pill.active {
+      background: linear-gradient(135deg, #c9885c, #b8734a);
+      color: #fffdf9;
+      border-color: transparent;
+      box-shadow: 0 6px 18px rgba(184, 115, 74, 0.35);
+    }
+    .board-wrap {
+      margin-top: 18px;
+      background: var(--paper);
+      border-radius: 20px;
+      padding: 22px 22px 8px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .board-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed var(--line);
+    }
+    .board-lead { margin: 0; flex: 1; min-width: 200px; color: #52473d; line-height: 1.75; font-size: 0.96rem; }
+    .link-full {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: rgba(109, 143, 106, 0.14);
+      color: var(--leaf);
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(109, 143, 106, 0.35);
+      white-space: nowrap;
+    }
+    .link-full:hover { background: rgba(109, 143, 106, 0.22); }
+    .board-panels { display: flex; flex-direction: column; gap: 14px; }
+    .panel {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fffefb 0%, #fff9f3 100%);
+      overflow: hidden;
+    }
+    .panel-title {
+      margin: 0;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 650;
+      color: #4a3728;
+      background: rgba(232, 200, 168, 0.35);
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-body {
+      padding: 12px 16px 16px;
+      font-size: 0.9rem;
+      color: #52473d;
+      max-height: 320px;
+      overflow-y: auto;
+      line-height: 1.65;
+    }
+    .panel-body :first-child { margin-top: 0; }
+    .panel-body ul, .panel-body ol { margin: 0.4em 0; padding-left: 1.25em; }
+    .panel-body li { margin: 0.25em 0; }
+    .panel-body a { color: var(--accent); }
+    .panel-body blockquote {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-left: 3px solid var(--accent2);
+      background: rgba(232, 200, 168, 0.2);
+      color: #5c4a3d;
+    }
+    .muted { color: var(--muted); font-size: 0.92rem; }
+    .toolbar { margin: 8px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background 0.2s;
+    }
+    .chip.active {
+      background: rgba(184, 115, 74, 0.18);
+      border-color: rgba(184, 115, 74, 0.45);
+      color: #6b3d24;
+      font-weight: 600;
+    }
+    .archive-head { margin-top: 32px; margin-bottom: 12px; font-size: 1.05rem; color: #4a3728; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 14px; }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(61,46,34,0.05);
+    }
     .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-    .card h3 { margin: 0; font-size: 18px; }
-    .card p { color: #334155; line-height: 1.7; min-height: 44px; }
-    .card a { color: #2563eb; text-decoration: none; font-size: 14px; }
+    .card h3 { margin: 0; font-size: 1.02rem; color: #3d2a1f; }
+    .card p { color: #5c4a3d; line-height: 1.7; min-height: 40px; font-size: 0.9rem; margin: 10px 0 0; }
+    .card a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
     .card a:hover { text-decoration: underline; }
-    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-    .tag { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 12px; padding: 3px 10px; }
-    .footer { margin-top: 16px; color: #475569; font-size: 13px; }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .tag {
+      background: rgba(109, 143, 106, 0.12);
+      color: #3d5a3a;
+      border: 1px solid rgba(109, 143, 106, 0.28);
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 3px 10px;
+    }
+    .footer { margin-top: 28px; color: var(--muted); font-size: 0.86rem; text-align: center; line-height: 1.6; }
   </style>
 </head>
 <body>
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:00 自动更新，支持按政策、展会、平台、K12 分类浏览。</p>
+      <p>每周一 10:00 自动更新。选择下方<strong>周期</strong>可切换各周；当前周期按<strong>板块</strong>速览正文节选。底部可按标签筛选历史卡片。</p>
     </section>
 
-    <section class="toolbar">
-      <button class="chip active" data-filter="all">全部</button>
-      <button class="chip" data-filter="policy">政策</button>
-      <button class="chip" data-filter="expo">展会</button>
-      <button class="chip" data-filter="platform">平台</button>
-      <button class="chip" data-filter="k12">K12</button>
-    </section>
+    <p class="section-label">当前展示 · 按周期</p>
+    <div class="week-strip" id="weekStrip" role="tablist" aria-label="选择周报周期"></div>
 
+    <div class="board-wrap">
+      <div class="board-meta" id="boardMeta"></div>
+      <div class="board-panels" id="boardPanels"></div>
+    </div>
+
+    <p class="section-label">历史周期 · 按标签筛选</p>
+    <section class="toolbar" aria-label="内容标签">
+      <button type="button" class="chip active" data-filter="all">全部</button>
+      <button type="button" class="chip" data-filter="policy">政策</button>
+      <button type="button" class="chip" data-filter="expo">展会</button>
+      <button type="button" class="chip" data-filter="platform">平台</button>
+      <button type="button" class="chip" data-filter="k12">K12</button>
+    </section>
+    <h2 class="archive-head">各周期入口</h2>
     <section class="grid" id="weeklyGrid">
-<article class="card" data-tags="policy expo platform k12">
+<article class="card" data-tags="policy expo platform k12" data-week="2026-W20-周报">
   <div class="card-head">
     <h3>2026-W20-周报</h3>
     <a href="weekly-html/2026-W20-周报.html" target="_self">查看详情</a>
@@ -49,7 +212,7 @@
   <p>第34届全国图书交易博览会定于 **7月24日至27日** 在杭州举办（主会场杭州国际博览中心），教辅与少儿读物相关企业进入会务筹备与首发策划窗口。</p>
   <div class="tags"><span class="tag">政策</span><span class="tag">展会</span><span class="tag">平台</span><span class="tag">K12</span></div>
 </article>
-<article class="card" data-tags="policy platform k12">
+<article class="card" data-tags="policy platform k12" data-week="2026-W19-周报">
   <div class="card-head">
     <h3>2026-W19-周报</h3>
     <a href="weekly-html/2026-W19-周报.html" target="_self">查看详情</a>
@@ -57,7 +220,7 @@
   <p>上海等地公办/民办小学网上报名窗口于本周集中开启（典型窗口含 5 月 7 日至 11 日），义务教育招生进入家长侧“高频办理周”，咨询、材料核验与系统并发压力显著抬升。</p>
   <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
 </article>
-<article class="card" data-tags="policy platform k12">
+<article class="card" data-tags="policy platform k12" data-week="2026-W18-周报">
   <div class="card-head">
     <h3>2026-W18-周报</h3>
     <a href="weekly-html/2026-W18-周报.html" target="_self">查看详情</a>
@@ -65,7 +228,7 @@
   <p>教育部“阳光招生专项行动（2026年）”执行要求持续传导，普通高中招生治理与关键环节风控成为本周关注重点。</p>
   <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
 </article>
-<article class="card" data-tags="policy platform k12">
+<article class="card" data-tags="policy platform k12" data-week="2026-W17-周报">
   <div class="card-head">
     <h3>2026-W17-周报</h3>
     <a href="weekly-html/2026-W17-周报.html" target="_self">查看详情</a>
@@ -75,23 +238,103 @@
 </article>
     </section>
 
-    <p class="footer">入口固定在本页；每周详情保存在 weekly-html 目录。</p>
+    <p class="footer">完整排版与外链请以各周「查看详情」页为准；本页板块为节选便于快速浏览。</p>
   </main>
 
+  <script type="application/json" id="weekly-data">[{"title":"2026-W20-周报","href":"weekly-html/2026-W20-周报.html","summary":"第34届全国图书交易博览会定于 **7月24日至27日** 在杭州举办（主会场杭州国际博览中心），教辅与少儿读物相关企业进入会务筹备与首发策划窗口。","tags":"policy expo platform k12","sections":[{"heading":"一、本周核心摘要（3-5条）","bodyHtml":"\u003cul>\n\u003cli>第34届全国图书交易博览会定于 **7月24日至27日** 在杭州举办（主会场杭州国际博览中心），教辅与少儿读物相关企业进入会务筹备与首发策划窗口。\u003c/li>\n\u003cli>教育部部署 **2026年全国学前教育宣传月**（5月20日至6月20日），主题 **「共同守护数字时代的童年」**，与幼教内容及亲子读物选题高度相关。\u003c/li>\n\u003cli>**中小学阳光招生专项行动（2026）** 进入地方贯通落实阶段，多地 **5月** 密集推进方案与督办机制；义务教育入学办理与高中阶段招生合规仍是敏感期。\u003c/li>\n\u003cli>**教材正版授权数字形态** 走向「智能体/伴学」等产品形态：头部数字公司与音像出版单位联合探索中小学教材场景化学习闭环。\u003c/li>\n\u003c/ul>"},{"heading":"二、教辅行业动态（含与各地教育部门深度合作）","bodyHtml":"\u003cul>\n\u003cli>事件：全国书博会档期与城市落定，出版发行链条启动招展与主题书目筹备\u003c/li>\n\u003cli>来源：新华网报道（2026-04-23，转自国家新闻出版署信息）；主题「书香中国 阅读之美」，主会场杭州国际博览中心，宁波、嘉兴、杭州良渚设分会场并设线上分会场。\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>**百万级**书目聚合展销窗口确定，适合教辅新品首发与渠道集中采购洽谈。\u003c/li>\n\u003cli>分会场与线上联动降低单次差旅依赖，利于分销网络分层对接。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>暑期前后选题与印刷节点需前置对齐书博会传播窗口。\u003c/li>\n\u003cli>区域内书店与馆配渠道会在二季度末释放明确的订货意向信号。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>（可选）与教育部门深度合作：本周未单独收录；阳光招生与学前宣传月为教育主管部门部署主线，见「三」「五」。\u003c/li>\n\u003c/ul>"},{"heading":"三、K12教育信息与K12教育政策全国盘点","bodyHtml":"\u003cul>\n\u003cli>事件：义务教育阳光招生政策密集落地，普通高中招生规范同为督查重点\u003c/li>\n\u003cli>来源：教育部《关于开展中小学阳光招生专项行动（2026）的通知》及各省春季推进会讯（如山东、福建等地 **2026年5月** 政务动态）。\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>强化免试就近、均衡分班、信息公开、「教育入学一件事」一网通办；严查提前掐尖、跨区域违规招生等。\u003c/li>\n\u003cli>**5—6月** 通常为地市入学信息采集与核验高峰期；舆情与投诉应对压力大。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>面向家长的刚需转为「权威解读+办事指引」，劣质谣言与不实升学话术易被放大。\u003c/li>\n\u003cli>高中阶段属地招生与自主招生合规收紧，影响生源结构与民办学校引流打法。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教育政策全国盘点（本周口径）：\u003c/li>\n\u003cli>国家层面要点：中小学阳光招生专项行动（2026）地方贯通落实；2026年全国学前教育宣传月（5月20日—6月20日）部署，主题「共同守护数字时代的童年」（详见「五」）。\u003c/li>\n\u003cli>省级重点变化（2-5条）：山东、福建等地 **5月** 推进会讯为样本，入学信息采集与核验高峰期舆情压力大。\u003c/li>\n\u003cli>对我方产品/渠道/合规的映射：家长侧刚需为权威解读与办事指引；幼教与数字产品表述需对齐学前宣传月禁区（严禁借名义商业推销）。\u003c/li>\n\u003c/ul>"},{"heading":"四、服务K12的平台动态","bodyHtml":"\u003cul>\n\u003cli>事件：国家智慧教育公共服务平台持续迭代背景下，教材数字化走向「智能体」落地\u003c/li>\n\u003cli>来源：业界公开报道（2026年4月末）：小猿与人教音像数字出版社联合发布「中小学教材智能体」，在成都举行的中国教育装备展示会活动中亮相；证券日报网等均有报道。\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>以正版教材数字内容与教育垂类大模型结合，强调伴学、导学闭环。\u003c/li>\n\u003cli>**智能硬件（学习机）** 作为载体落地教材同步场景，软硬件一体化竞争加剧。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>教辅与校本资源的数字化变现路径会从单纯题库转向「教材映射 + AI交互」。\u003c/li>\n\u003cli>出版侧更看重版权合规、模型可控与安全审计能力。\u003c/li>\n\u003c/ul>"},{"heading":"五、政府政策与通知（含K12教辅政策全国盘点）","bodyHtml":"\u003cul>\n\u003cli>政策：教育部办公厅关于开展2026年全国学前教育宣传月活动的通知（教基厅函〔2026〕11号）\u003c/li>\n\u003cli>发布单位：教育部办公厅\u003c/li>\n\u003cli>发布时间：2026-04-09（官网公开）\u003c/li>\n\u003cli>核心条款：\u003c/li>\n\u003cli>活动时间：**2026年5月20日至6月20日**；主题：**共同守护数字时代的童年**。\u003c/li>\n\u003cli>宣传重点：落实《学前教育法》，聚焦数字时代儿童保护，倡导真实生活与游戏价值，防止数字产品替代亲情陪伴与互动。\u003c/li>\n\u003cli>严禁借宣传月名义商业推销。\u003c/li>\n\u003cli>执行影响：\u003c/li>\n\u003cli>幼教读物与少儿数字产品选题须紧扣「数字素养」「家园共育」叙事。\u003c/li>\n\u003cli>面向学龄前产品的广告投放与渠道路演合规边界更清晰。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教辅政策全国盘点（本周口径）：\u003c/li>\n\u003cli>教材教辅监管、评议、选用与进校园相关口径：教材正版数字化与第三方科技公司联合产品（如教材智能体）增加版权、模型安全与进校园合规审查关注度。\u003c/li>\n\u003cli>重点省份执行差异或案例（若可获取）：阳光招生地方落实节奏差异延续「三」中省份样本。\u003c/li>\n\u003cli>对我方选题、印制、渠道与数字形态的提示：数字化变现路径向「教材映射 + AI交互」演进时，需同步评估版权授权与审计能力。\u003c/li>\n\u003c/ul>"},{"heading":"六、运营行动建议（下周执行）","bodyHtml":"\u003cul>\n\u003cli>高优先级：启动「书博会前」选题与渠道清单（首发书单、重点省市分销商、馆配联系人三重列表）。\u003c/li>\n\u003cli>中优先级：面向学龄前人群输出「数字时代童年守护」主题书单与不插电亲子阅读素材包。\u003c/li>\n\u003cli>低优先级：追踪本省阳光招生热线与省级实施意见修订条款，更新对内话术库。\u003c/li>\n\u003c/ul>"},{"heading":"七、风险与机会清单","bodyHtml":"\u003cul>\n\u003cli>风险：招生季信息不对称引发舆情；幼教类产品过度数字化表述触碰监管表述红线。\u003c/li>\n\u003cli>机会：书博会全国曝光窗口利于教辅新品势能放大；学前宣传月利于家教类纸书与线上线下联动营销。\u003c/li>\n\u003c/ul>"},{"heading":"八、教辅行业会务计划（近60天）","bodyHtml":"\u003cul>\n\u003cli>会务名称：第34届全国图书交易博览会\u003c/li>\n\u003cli>时间：**2026-07-24 至 2026-07-27**\u003c/li>\n\u003cli>地点：浙江杭州（主会场：**杭州国际博览中心**；分会场：宁波、嘉兴、杭州良渚；线上分会场并行）\u003c/li>\n\u003cli>主办/承办：国家新闻出版署主办；浙江省人民政府、杭州市人民政府承办（见新华网稿）\u003c/li>\n\u003cli>与我方相关性：极高（全国教辅订货与品牌曝光的核心档期之一）\u003c/li>\n\u003cli>建议动作：确认展位/论坛路演档期；列出首发教辅SKU与渠道让利方案；预约重点省市发行集团与电商采购洽谈。\u003c/li>\n\u003cli>会务名称：2026杭州第12届亚洲教育装备博览会（备选参展）\u003c/li>\n\u003cli>时间：2026-09-15 至 2026-09-17\u003c/li>\n\u003cli>地点：杭州大会展中心\u003c/li>\n\u003cli>主办/承办：以主办方公示为准（中国教育装备行业协会等）\u003c/li>\n\u003cli>与我方相关性：中高（装备×数字化教辅联动）\u003c/li>\n\u003cli>建议动作：若主打智能硬件联名教辅，可同期布置试用课场景。\u003c/li>\n\u003c/ul>"},{"heading":"九、出版社/教辅公司：出版及数智化方向最新动态","bodyHtml":"\u003cul>\n\u003cli>公司/机构：人民教育音像出版社（人教音像数字出版体系）× 小猿（猿力科技）\u003c/li>\n\u003cli>出版侧（新品线、修订、丛书与重点SKU）：中小学教材正版音像/数字出版体系与教材同步场景绑定。\u003c/li>\n\u003cli>数智化侧（平台、产品、组织与业务升级）：联合发布中小学教材智能体，探索「AI伴学 + AI导学」及装备展推广路径。\u003c/li>\n\u003cli>来源：证券日报网、IT之家等公开报道（2026年4月末）\u003c/li>\n\u003cli>影响判断：教材版权方正版数字化授权与第三方教育科技公司绑定加深，传统教辅需加速数字化权益谈判。\u003c/li>\n\u003cli>可跟进点：评估自有教辅版权能否嵌入 regional 校本合作或 OEM 智能体模块。\u003c/li>\n\u003c/ul>"},{"heading":"十、出版社/教辅公司：跨行及与科技公司深度合作","bodyHtml":"\u003cul>\n\u003cli>公司/机构：华东师范大学出版社\u003c/li>\n\u003cli>合作方（跨行业/科技公司）：宏思未来智能技术（宏润建设旗下）\u003c/li>\n\u003cli>合作方向：人工智能课程研发、融合出版、成果转化与国际布局（长期战略合作）。\u003c/li>\n\u003cli>来源：新浪财经等公开财经报道（2026年4月）\u003c/li>\n\u003cli>影响判断：出版社与人工智能硬件/机器人赛道绑定，「教材—课程—实训」链条拉长。\u003c/li>\n\u003cli>可跟进点：关注区域职教与基础教育 AI 实验室建设项目分包机会。\u003c/li>\n\u003c/ul>"},{"heading":"十一、自动摘录（政策与要闻，CI 每周更新）","bodyHtml":"\u003cblockquote>以下为 \u003ccode>config/weekly-rss.json\u003c/code> 拉取的 **标题 + 日期 + 原文链接** 列表（不转载正文）；解读请在「三」「五」章补充。微信公众号 / 服务号 / 小红书等需自行提供可访问的 RSS（如 RSSHub、wechat2rss 等生成地址）并填入配置。\u003c/blockquote>\n\u003cp>&lt;!-- AUTO_DIGEST_START --&gt;\u003c/p>\n\u003cul>\n\u003cli>**国家发改委：教材价格并非“一放了之”** · 2016-04-05 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0405/c1006-28249915.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**2016年重点高校将定向招收6万名农村和贫困地区学生** · 2016-04-05 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0405/c1006-28249827.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**常年大量游客进入 大学校园对外开放遇\"花季难题\"** · 2016-04-05 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0405/c1006-28249769.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**风筝蛋画诗歌：三省四地小学生“网络课堂”话清明** · 2016-04-05 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0405/c1053-28249710.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**北京理工大学优势专业今年增加在京招生计划** · 2016-04-05 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0405/c1053-28249611.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**中小学教材定价权下放** · 2016-04-05 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0405/c1006-28249179.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**甘肃省9.18亿元学前教育补助金陆续发放** · 2016-04-04 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0404/c1006-28248084.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**五地大学生助力脱贫** · 2016-04-04 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0404/c1006-28248029.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**北京2016中招：部分郊区校“逆袭” 可招城区学生** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c367001-28245448.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**法语文化周嗨翻校园** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28245429.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**高校招收贫困生的专项计划都招谁 教育部发文明确** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28245355.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**教育部促高校毕业生精准就业 严防“试用期陷阱”** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28245322.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**贫困地区定向招生国家专项计划今年扩招1万人** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28244329.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**教育部：近期一些社会人员伤害学生事件令人震惊** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28244023.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**十余省份公布高考改革方案 多地突出学生自主选择权** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28242867.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**天津大学博士招生全面实施“申请—审核”制 考核多元** · 2016-04-01 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0401/c1006-28242746.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**甘肃：高校教师岗位业绩突出者可直接申报教授** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0331/c367001-28242090.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**郑继伟：要为大学生搭建更多创新创业教育的平台** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0315/c367001-28201726.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**教育部：“不合格”学位授权点存在师资不足等问题** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0331/c1006-28239731.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**高校：主动放弃学位授权点是为了“握拳发展”** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0331/c1006-28241602.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**北京今年6万人报名高考 明年启动高考改革** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0330/c1053-28239199.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**首届中以大学校长论坛在以色列举行** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0331/c1006-28239701.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003cli>**禁止在职教师有偿在线授课？教育部：尚在研究中** · 2016-03-31 · \u003ca href=\"http://edu.people.com.cn/n1/2016/0330/c367001-28238823.html\">原文\u003c/a>（人民网-教育）\u003c/li>\n\u003c/ul>\n\u003cp>&lt;!-- AUTO_DIGEST_END --&gt;\u003c/p>"}]},{"title":"2026-W19-周报","href":"weekly-html/2026-W19-周报.html","summary":"上海等地公办/民办小学网上报名窗口于本周集中开启（典型窗口含 5 月 7 日至 11 日），义务教育招生进入家长侧“高频办理周”，咨询、材料核验与系统并发压力显著抬升。","tags":"policy platform k12","sections":[{"heading":"一、本周核心摘要（3-5条）","bodyHtml":"\u003cul>\n\u003cli>上海等地公办/民办小学网上报名窗口于本周集中开启（典型窗口含 5 月 7 日至 11 日），义务教育招生进入家长侧“高频办理周”，咨询、材料核验与系统并发压力显著抬升。\u003c/li>\n\u003cli>教育部发布《普通高等学校本科专业目录（2026年）》，交叉学科门类与新兴专业布局调整，对高中段升学规划、选科与生涯教育类内容提出“对照新版目录更新”的刚性需求。\u003c/li>\n\u003cli>教育部等五部门印发的《“人工智能+教育”行动计划》在产业侧持续发酵，校端与教辅类产品在“AI功能边界、数据合规、教学有效性证据链”上的要求进一步显性化。\u003c/li>\n\u003cli>北京等多地非本市户籍适龄儿童入学材料审核、联合审核时段与本周重叠，一线执行口径与材料清单仍是纠纷与舆情高发点。\u003c/li>\n\u003c/ul>"},{"heading":"二、教辅行业动态（含与各地教育部门深度合作）","bodyHtml":"\u003cul>\n\u003cli>事件：高校专业目录年度更新带动升学规划类、生涯教育类教辅与配套教研服务内容迭代\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>教育部官网：《普通高等学校本科专业目录（2026年）》发布相关报道（2026-04-28），链接示例：\u003ccode>http://www.moe.gov.cn/jyb_xwfb/gzdt_gzdt/s5987/202604/t20260428_1435016.html\u003c/code>\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>本科专业目录体系更新，专业口径与名称变化会影响“专业介绍类”内容的准确性。\u003c/li>\n\u003cli>交叉学科与新兴方向热度上升，容易诱发营销端夸大解读，需要 stronger 证据与来源标注。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>对教辅/内容机构：建议建立“目录变更对照表+更新节奏”，把专业解读从“经验口径”升级为“可追溯引用口径”。\u003c/li>\n\u003cli>对渠道端：高考季前后，选科/志愿相关产品的合规审核与版权素材来源管理需同步加强。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>事件：教师用书、教参类产品继续强调“教材解读—教学指导—课堂落地”的一体化能力（春学期教学周期内需求稳定）\u003c/li>\n\u003cli>来源：行业侧产品形态观察（以人教社等权威出版机构教材/教参体系为主线）\u003c/li>\n\u003cli>要点：教参竞争从“知识点讲解”走向“单元整体教学、跨学科任务、评价一致性”的综合方案。\u003c/li>\n\u003cli>影响判断：与《“人工智能+教育”行动计划》叠加后，教参数字化、配套资源包、教研服务化更容易形成组合售卖。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>（可选）与教育部门深度合作：本周未单独收录省市教育部门与教辅企业的战略合作条目；智慧教育平台与国家平台协同多为区域项目与平台侧动态（见「四」）。\u003c/li>\n\u003c/ul>"},{"heading":"三、K12教育信息与K12教育政策全国盘点","bodyHtml":"\u003cul>\n\u003cli>事件：多地义务教育入学办理进入网上报名与材料核验的关键周（以上海、北京为样本）\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>上海市义务教育阶段招生政策公开信息（公办小学报名窗口等行业通稿与本地公开资料梳理；具体以当年上海市教委及各区当年细则为准）\u003c/li>\n\u003cli>北京市义务教育入学服务平台及各区入学政策公开页面（2026 年入学专题页面持续更新）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>上海：公办小学报名典型窗口覆盖 5 月中下旬关键区间（业界关注的“报名周”多集中于 5 月上旬至中旬，需以当年正式时间表为准）。\u003c/li>\n\u003cli>北京：非本市户籍适龄儿童在网上登记注册、联合审核等节点密集，材料不齐与居住证/社保核验问题集中暴露。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>面向家长的“流程说明书、材料清单、常见问题”类产品流量抬升，同时也是误导与投诉高风险区。\u003c/li>\n\u003cli>学校与区域更需要统一话术与可追踪的服务记录，降低舆情风险。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>事件：普通高中招生治理与“阳光招生”专项行动要求在中招季持续传导，地市执行差异仍在\u003c/li>\n\u003cli>来源：教育部办公厅《关于开展中小学阳光招生专项行动（2026年）的通知》及各地转发落实文件（2026 年春季以来持续执行）\u003c/li>\n\u003cli>要点：属地招生、公民同招、均衡分班、违规提前招生治理等要求保持高压态势。\u003c/li>\n\u003cli>影响判断：涉招生营销、变相选拔、承诺入学等内容仍是红线。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教育政策全国盘点（本周口径）：\u003c/li>\n\u003cli>国家层面要点：中小学阳光招生专项行动（2026年）持续执行；本科专业目录（2026年）更新外溢至高中升学与生涯教育内容供应链；《“人工智能+教育”行动计划》强化校端与产品的合规与场景审计要求（详见「五」）。\u003c/li>\n\u003cli>省级重点变化（2-5条）：以上海公办/民办小学网上报名窗口、北京非本市户籍材料与联合审核等为样本，义务教育入口办理进入高频周。\u003c/li>\n\u003cli>对我方产品/渠道/合规的映射：招生办理类内容需可审计、分区维护；AI 教辅宣传对齐政策表述与数据合规清单。\u003c/li>\n\u003c/ul>"},{"heading":"四、服务K12的平台动态","bodyHtml":"\u003cul>\n\u003cli>事件：《“人工智能+教育”行动计划》推动平台能力从“资源供给”走向“教学辅助与治理协同”\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>教育部等五部门：《“人工智能+教育”行动计划》通知（2026-04-10），链接示例：\u003ccode>http://www.moe.gov.cn/srcsite/A16/s3342/202604/t20260410_1433240.html\u003c/code>\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>强调人工智能与教育融合的制度化路径，涉及教学、评价、管理、资源供给等多场景。\u003c/li>\n\u003cli>对平台企业：更关注数据安全、内容审核、青少年保护与教育专业性，不再是单一“模型能力”比拼。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>与国家智慧教育公共服务平台新版能力形成共振：区域平台与大厂产品需补齐“合规方案+落地案例+教研共创”。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>事件：国家智慧教育公共服务平台新版能力继续扩围，区域落地比拼“数据治理与场景融合”\u003c/li>\n\u003cli>来源：教育部关于国家智慧教育公共服务平台新版上线的公开信息（2026 年春季），各地教育部门转发与解读材料\u003c/li>\n\u003cli>要点：学校教育中心、终身学习、科技创新、中文教育与大数据中心等模块协同，区域集成项目增多。\u003c/li>\n\u003cli>影响判断：纯资源型供应商议价下降；具备教研服务、实施交付与数据对接能力的厂商更占优势。\u003c/li>\n\u003c/ul>"},{"heading":"五、政府政策与通知（含K12教辅政策全国盘点）","bodyHtml":"\u003cul>\n\u003cli>政策：《普通高等学校本科专业目录（2026年）》发布\u003c/li>\n\u003cli>发布单位：教育部（高等教育专业目录更新）\u003c/li>\n\u003cli>发布时间：公开材料显示为 2026-04-28 前后（以教育部公开页面为准）\u003c/li>\n\u003cli>核心条款（摘要）：优化专业布局，服务国家战略需求；交叉学科相关专业纳入目录管理体系等（以正式文件为准）。\u003c/li>\n\u003cli>执行影响：高校招生专业名称与口径调整外溢至高中生涯教育与升学咨询内容供应链。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>政策：《“人工智能+教育”行动计划》\u003c/li>\n\u003cli>发布单位：教育部等五部门\u003c/li>\n\u003cli>发布时间：2026-04-10（以教育部公开文件为准）\u003c/li>\n\u003cli>核心条款（摘要）：面向 2030 提出人工智能与教育深度融合的目标与任务分工（以正式文件为准）。\u003c/li>\n\u003cli>执行影响：AI 教育产品进入“政策对齐+场景审计+数据合规”阶段，草莽流量玩法空间收束。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教辅政策全国盘点（本周口径）：\u003c/li>\n\u003cli>教材教辅监管、评议、选用与进校园相关口径：与《“人工智能+教育”行动计划》叠加，教辅数字化、进校服务与营销话术需同步满足内容审核、数据安全与青少年保护要求。\u003c/li>\n\u003cli>重点省份执行差异或案例（若可获取）：招生季以上海、北京办理与审核节奏为一线执行差异样本。\u003c/li>\n\u003cli>对我方选题、印制、渠道与数字形态的提示：教参与服务化组合售卖增加交付与教研背书要求；专业目录变更驱动升学类内容系统性修订。\u003c/li>\n\u003c/ul>"},{"heading":"六、运营行动建议（下周执行）","bodyHtml":"\u003cul>\n\u003cli>高优先级：把“招生季高频问题”做成可审计的标准化解答库（上海/北京等重点城市分区维护），并同步客服与新媒体分发口径。\u003c/li>\n\u003cli>高优先级：对照《本科专业目录（2026年）》做一次高中升学内容盘点，标记需修订页面与责任人清单。\u003c/li>\n\u003cli>中优先级：围绕《“人工智能+教育”行动计划》输出一份内部合规清单（数据、内容、营销话术、进校园合作流程）。\u003c/li>\n\u003cli>低优先级：与国家/省市智慧教育平台相关的接口与账号体系梳理，形成合作切入点的“场景地图”。\u003c/li>\n\u003c/ul>"},{"heading":"七、风险与机会清单","bodyHtml":"\u003cul>\n\u003cli>风险：招生季解读失误与误导性承诺引发投诉/舆情；AI 教辅功能宣传夸大引发监管与平台下架风险。\u003c/li>\n\u003cli>机会：招生办理高峰带来刚需流量；专业目录更新带来系统性内容改版需求；AI+教育政策推动校端数字化预算与联合教研需求。\u003c/li>\n\u003c/ul>"},{"heading":"八、教辅行业会务计划（近60天）","bodyHtml":"\u003cul>\n\u003cli>会务名称：全国书会（用户线索，待主办方正式公告核验）\u003c/li>\n\u003cli>时间：2026-07-24（待核验）\u003c/li>\n\u003cli>地点：杭州（待核验）\u003c/li>\n\u003cli>主办/承办：待核验\u003c/li>\n\u003cli>与我方相关性：高（教材教辅展示、渠道拓展、合作洽谈）\u003c/li>\n\u003cli>建议动作：本周完成主办方官网/官微交叉核验；确认展览日程与报名通道后锁定行程与对接名单。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>会务名称：第12届亚洲教育装备博览会\u003c/li>\n\u003cli>时间：2026-09-15 至 2026-09-17\u003c/li>\n\u003cli>地点：杭州大会展中心\u003c/li>\n\u003cli>主办/承办：以官方通知为准（Worlddidac、中国教育装备行业协会等）\u003c/li>\n\u003cli>与我方相关性：中高（教育装备与数字教育生态协同，便于接触 AI 与信息化供应商）\u003c/li>\n\u003cli>建议动作：按“AI+教育、数字资源、评测与数据”三条线预筛目标展商与议题。\u003c/li>\n\u003c/ul>"},{"heading":"九、出版社/教辅公司：出版及数智化方向最新动态","bodyHtml":"\u003cul>\n\u003cli>公司/机构：行业总体（政策驱动）\u003c/li>\n\u003cli>出版侧（新品线、修订、丛书与重点SKU）：本周无头部单品首发类单独条目；教参与升学类内容以目录与招生季修订需求为主（见「二」「三」）。\u003c/li>\n\u003cli>数智化侧（平台、产品、组织与业务升级）：《“人工智能+教育”行动计划》驱动出版集团加快布局人工智能辅助编校、数字教材与教研服务一体化；区域项目更强调数据合规与教师培训交付。\u003c/li>\n\u003cli>来源：教育部等五部门通知（2026-04-10）及公开解读材料\u003c/li>\n\u003cli>影响判断：数智化投入从“展示型项目”转向“可量化教学效果与可持续运营”的项目评审逻辑。\u003c/li>\n\u003cli>可跟进点：联合地方教研室的可验证试点（前后测、课堂观察、作业负担指标）比单纯采购资源更容易立项。\u003c/li>\n\u003c/ul>"},{"heading":"十、出版社/教辅公司：跨行及与科技公司深度合作","bodyHtml":"\u003cul>\n\u003cli>公司/机构：跨行业融合案例（延续观察）\u003c/li>\n\u003cli>合作方（跨行业/科技公司）：文旅、科技、智能硬件等（具体项目以企业官方披露为准）\u003c/li>\n\u003cli>合作方向：课本 IP 场景化与研学、人工智能企业与内容方联合解决方案等\u003c/li>\n\u003cli>来源：公开报道与企业新闻稿（上轮周报已收录示例线索的可延续跟踪）\u003c/li>\n\u003cli>影响判断：跨界合作的关键在“教育资质、内容审校、未成年人保护、广告合规”四条底线。\u003c/li>\n\u003cli>可跟进点：优先选择可提供教研背书与成果验证路径的合作方，避免纯流量置换型合作。\u003c/li>\n\u003c/ul>"}]},{"title":"2026-W18-周报","href":"weekly-html/2026-W18-周报.html","summary":"教育部“阳光招生专项行动（2026年）”执行要求持续传导，普通高中招生治理与关键环节风控成为本周关注重点。","tags":"policy platform k12","sections":[{"heading":"一、本周核心摘要（3-5条）","bodyHtml":"\u003cul>\n\u003cli>教育部“阳光招生专项行动（2026年）”执行要求持续传导，普通高中招生治理与关键环节风控成为本周关注重点。\u003c/li>\n\u003cli>《中小学心理健康教育读本》发布后进入教学试点推进阶段，心理健康课程相关内容与配套教辅需求提升。\u003c/li>\n\u003cli>国家智慧教育公共服务平台新版继续扩散，AI+教育与教育数据治理成为平台建设主线。\u003c/li>\n\u003cli>多地义务教育入学办理窗口集中开启（4月下旬至5月），家长侧政策解读和流程服务需求快速增长。\u003c/li>\n\u003c/ul>"},{"heading":"二、教辅行业动态（含与各地教育部门深度合作）","bodyHtml":"\u003cul>\n\u003cli>事件：心理健康教育相关教材/教辅进入推广与试点阶段\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>教育部：《中小学心理健康教育读本》出版发行（2026-04-10）\u003c/li>\n\u003cli>人民教育出版社：《中小学心理健康教育读本》出版研讨暨教学试点启动会（2026-04-10）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>读本按小学/初中/高中分学段编写并组织教学试点，强调可复制的课程实施模式。\u003c/li>\n\u003cli>出版端同步推进配套资源与教师使用支持。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>心理健康主题将从“活动化”走向“课程化”，配套内容市场空间扩大。\u003c/li>\n\u003cli>机构侧需加强心理健康内容的专业合规审校能力。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>（可选）与教育部门深度合作：本周未单独收录；心理健康读本推进以教育部部署与人教社教研活动为主，属政策与出版联动主线。\u003c/li>\n\u003c/ul>"},{"heading":"三、K12教育信息与K12教育政策全国盘点","bodyHtml":"\u003cul>\n\u003cli>事件：义务教育招生进入家长办理高峰前的关键准备周\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>上海市及区级招生文件（4月7日起发布，4月中下旬持续办理）\u003c/li>\n\u003cli>昆山市2026秋季义务教育新生入学报名通知（2026-04-07）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>多地明确线上报名、材料核验、时间窗口与咨询机制。\u003c/li>\n\u003cli>“不考试、不面试、不收简历”要求进一步强化。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>家长咨询、政策问答与流程辅助需求明显上升。\u003c/li>\n\u003cli>学校和机构需要更重视规则边界与信息披露合规。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教育政策全国盘点（本周口径）：\u003c/li>\n\u003cli>国家层面要点：中小学阳光招生专项行动（2026年）持续传导，强调学位预测、均衡分班、「教育入学一件事」一网通办等（详见「五」）。\u003c/li>\n\u003cli>省级重点变化（2-5条）：以上海及区级文件、昆山等地为代表，明确线上报名、材料核验与时间窗口；普通高中招生治理同步受关注。\u003c/li>\n\u003cli>对我方产品/渠道/合规的映射：家长咨询与政策问答服务需求上升；营销与话术需严守「不考试、不面试、不收简历」等边界。\u003c/li>\n\u003c/ul>"},{"heading":"四、服务K12的平台动态","bodyHtml":"\u003cul>\n\u003cli>事件：国家智慧教育公共服务平台新版进入应用扩围期\u003c/li>\n\u003cli>来源：教育部《国家智慧教育公共服务平台新版上线》（2026-04-01）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>新增科技创新中心、终身学习中心、中文教育中心，平台能力从资源供给延伸至治理与服务。\u003c/li>\n\u003cli>国家教育大数据中心强调数据汇聚共享与AI赋能决策。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>K12服务平台需要提升与国家平台的协同能力（数据、资源、接口）。\u003c/li>\n\u003cli>业务竞争点从“内容数量”转向“数据质量+场景落地”。\u003c/li>\n\u003c/ul>"},{"heading":"五、政府政策与通知（含K12教辅政策全国盘点）","bodyHtml":"\u003cul>\n\u003cli>政策：关于开展中小学阳光招生专项行动（2026年）及教育部答记者问\u003c/li>\n\u003cli>发布单位：教育部办公厅/教育部基础教育司\u003c/li>\n\u003cli>发布时间：2026-04-03（答记者问公开）\u003c/li>\n\u003cli>核心条款：\u003c/li>\n\u003cli>强化学位预测预警、严禁违规提前/跨区域招生、推进均衡分班。\u003c/li>\n\u003cli>加快“教育入学一件事”办理，强调一网通办与风险前置排查。\u003c/li>\n\u003cli>执行影响：\u003c/li>\n\u003cli>招生管理进一步精细化，地方执行与监督问责力度提升。\u003c/li>\n\u003cli>面向家长的政策解释、报名服务与舆情管理成为刚需。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教辅政策全国盘点（本周口径）：\u003c/li>\n\u003cli>教材教辅监管、评议、选用与进校园相关口径：本周主线为招生治理与入学办理节奏，《中小学心理健康教育读本》进入试点推广，教辅需关注与读本、课程配套的专业审校。\u003c/li>\n\u003cli>重点省份执行差异或案例（若可获取）：上海、昆山等地报名与办理窗口差异为样本。\u003c/li>\n\u003cli>对我方选题、印制、渠道与数字形态的提示：心理健康主题课程化带动配套资源；招生季渠道投放与进校园表述合规优先。\u003c/li>\n\u003c/ul>"},{"heading":"六、运营行动建议（下周执行）","bodyHtml":"\u003cul>\n\u003cli>高优先级：围绕“阳光招生”制作标准答疑库（提前招生、分班、跨区、材料）并上线统一话术。\u003c/li>\n\u003cli>中优先级：新增“心理健康教育”专题内容包，覆盖课程建议、家校沟通与教师使用场景。\u003c/li>\n\u003cli>低优先级：梳理本地平台与国家平台可对接项，形成一版数据与接口改造清单。\u003c/li>\n\u003c/ul>"},{"heading":"七、风险与机会清单","bodyHtml":"\u003cul>\n\u003cli>风险：招生季政策解读错误导致投诉风险；心理健康内容若缺乏专业审核存在合规风险。\u003c/li>\n\u003cli>机会：阳光招生与一网通办提升对标准化信息服务的需求；心理健康课程化带来新产品增量。\u003c/li>\n\u003c/ul>"},{"heading":"八、教辅行业会务计划（近60天）","bodyHtml":"\u003cul>\n\u003cli>会务名称：全国书会（用户线索，待主办方正式公告核验）\u003c/li>\n\u003cli>时间：2026-07-24（待核验）\u003c/li>\n\u003cli>地点：杭州（待核验）\u003c/li>\n\u003cli>主办/承办：待核验\u003c/li>\n\u003cli>与我方相关性：高（教材教辅展示、渠道拓展、合作洽谈）\u003c/li>\n\u003cli>建议动作：本周内完成主办方官网/官微核验，确认后纳入重点参会清单并提前预约对接出版与发行单位。\u003c/li>\n\u003cli>会务名称：第12届亚洲教育装备博览会\u003c/li>\n\u003cli>时间：2026-09-15 至 2026-09-17\u003c/li>\n\u003cli>地点：杭州大会展中心\u003c/li>\n\u003cli>主办/承办：Worlddidac、中国教育装备行业协会等（以官方通知为准）\u003c/li>\n\u003cli>与我方相关性：中高（教育装备与数字教育生态协同，利于筛选数智化合作对象）\u003c/li>\n\u003cli>建议动作：围绕“AI+教育、数字资源、馆建资源”方向筛选目标展商并准备合作清单。\u003c/li>\n\u003c/ul>"},{"heading":"九、出版社/教辅公司：出版及数智化方向最新动态","bodyHtml":"\u003cul>\n\u003cli>公司/机构：江苏凤凰出版传媒集团\u003c/li>\n\u003cli>出版侧（新品线、修订、丛书与重点SKU）：本周无单独收录（本会以数智教辅研讨为主）。\u003c/li>\n\u003cli>数智化侧（平台、产品、组织与业务升级）：举办“2026年数智教辅交流研讨会”，披露“凤凰人工智能赋能教育出版计划”及多款AI教育产品，并推进内容资源共享池合作。\u003c/li>\n\u003cli>来源：凤凰出版传媒集团官网（2026-03-20）\u003c/li>\n\u003cli>影响判断：省级出版集团正在从单点产品竞争转向“内容+平台+生态协同”竞争。\u003c/li>\n\u003cli>可跟进点：跟踪其联合研发、区域适配合作机制，评估是否可对接资源共建或渠道互补。\u003c/li>\n\u003c/ul>"},{"heading":"十、出版社/教辅公司：跨行及与科技公司深度合作","bodyHtml":"\u003cul>\n\u003cli>公司/机构：人民教育出版社\u003c/li>\n\u003cli>合作方（跨行业/科技公司）：黄山旅游集团（文旅行业）\u003c/li>\n\u003cli>合作方向：推出“跟着课本游黄山”文教融合活动，课文场景化与研学体验结合。\u003c/li>\n\u003cli>来源：中国教育新闻网（2026-04-07）\u003c/li>\n\u003cli>影响判断：教材IP从课堂延展到文旅场景，增强品牌触达与内容变现新路径。\u003c/li>\n\u003cli>可跟进点：评估本地可复制的“课本IP+研学/文旅”合作线路与落地伙伴。\u003c/li>\n\u003cli>公司/机构：华东师范大学出版社\u003c/li>\n\u003cli>合作方（跨行业/科技公司）：宏思未来智能技术（教育机器人/AI技术）\u003c/li>\n\u003cli>合作方向：AI课程研发、教材融合出版、成果转化与国际化布局。\u003c/li>\n\u003cli>来源：公开财经媒体报道（2026-04-13）\u003c/li>\n\u003cli>影响判断：出版机构与技术公司深度绑定趋势增强，产品形态向“教材+平台+硬件/智能体”升级。\u003c/li>\n\u003cli>可跟进点：优先关注可快速商业化的细分方向（教师发展、课堂诊断、题库智能化）。\u003c/li>\n\u003c/ul>"}]},{"title":"2026-W17-周报","href":"weekly-html/2026-W17-周报.html","summary":"教育部发布《中国青少年阅读素养框架》教育行业标准（JY/T 0663-2026），阅读能力评价与教学资源建设进入标准化阶段。","tags":"policy platform k12","sections":[{"heading":"一、本周核心摘要（3-5条）","bodyHtml":"\u003cul>\n\u003cli>教育部发布《中国青少年阅读素养框架》教育行业标准（JY/T 0663-2026），阅读能力评价与教学资源建设进入标准化阶段。\u003c/li>\n\u003cli>多地2026年义务教育招生细则落地（以上海及区级方案为代表），阳光招生、均衡分班与信息公开要求进一步细化。\u003c/li>\n\u003cli>国家智慧教育公共服务平台新版能力持续释放，学校教育中心与数据治理能力升级，平台类产品合作门槛上升。\u003c/li>\n\u003cli>教辅与教材相关招采进入秋季准备窗口，区域项目集中发布，交付周期与成本管控成为重点。\u003c/li>\n\u003c/ul>"},{"heading":"二、教辅行业动态（含与各地教育部门深度合作）","bodyHtml":"\u003cul>\n\u003cli>事件：区域教材教辅纸张采购密集启动（秋季用书生产前置）\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>海南凤凰新华出版发行有限责任公司2026年秋季教材教辅纸张采购公告（2026-04-16）\u003c/li>\n\u003cli>新疆教育出版社2026年秋季教材、教辅用纸采购项目中标候选公示（2026-04-16）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>采购规模与交付节点明确，普遍要求在合同签订后较短周期内到货。\u003c/li>\n\u003cli>纸张品类、克重、单价透明化，成本端压力可量化。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>对教辅企业：需提前锁定纸张与印制产能，避免旺季交付风险。\u003c/li>\n\u003cli>对渠道端：秋季征订节奏前移，库存与回款节奏需同步优化。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>（可选）与教育部门深度合作：本周未单独收录省市教育部门与出版社/教辅公司的战略签约或共建项目；招采主体以发行与出版单位为主。\u003c/li>\n\u003c/ul>"},{"heading":"三、K12教育信息与K12教育政策全国盘点","bodyHtml":"\u003cul>\n\u003cli>事件：2026年义务教育招生细则进入区县执行期\u003c/li>\n\u003cli>来源：\u003c/li>\n\u003cli>上海市教委《2026年本市义务教育阶段学校招生入学工作实施意见》（2026-03-26）\u003c/li>\n\u003cli>虹口区、普陀区、青浦区等2026招生实施细则（2026-04-07起）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>明确“免试就近、阳光招生、均衡分班”执行要求。\u003c/li>\n\u003cli>“校园开放日”与报名流程分离，禁止测试、面谈和收简历。\u003c/li>\n\u003cli>招生入学时间节点和线上办理路径更加清晰。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>学校端对规范招生的合规执行进一步收紧。\u003c/li>\n\u003cli>家长端信息焦虑有望下降，但对官方信息解读服务需求提升。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教育政策全国盘点（本周口径）：\u003c/li>\n\u003cli>国家层面要点：义务教育招生阳光化、均衡分班与信息公开要求持续强化；教语信函〔2026〕1号发布《中国青少年阅读素养框架》（JY/T 0663-2026），阅读评价与资源建设进入行业标准阶段（详见「五」）。\u003c/li>\n\u003cli>省级重点变化（2-5条）：以上海及虹口、普陀、青浦等区为代表，2026年义务教育阶段招生入学细则落地，明确免试就近、校园开放日与报名流程分离等。\u003c/li>\n\u003cli>对我方产品/渠道/合规的映射：招生季官方解读与办事指引类内容需求上升；阅读类教辅需对照新标准做映射盘点。\u003c/li>\n\u003c/ul>"},{"heading":"四、服务K12的平台动态","bodyHtml":"\u003cul>\n\u003cli>事件：国家智慧教育公共服务平台新版上线后进入应用深化期\u003c/li>\n\u003cli>来源：教育部官网《国家智慧教育公共服务平台新版上线》（2026-04-01）\u003c/li>\n\u003cli>要点：\u003c/li>\n\u003cli>平台结构升级为学校教育中心等核心模块，并新增科技创新、终身学习、中文教育中心。\u003c/li>\n\u003cli>国家教育大数据中心应用加强，AI与数据治理能力同步提升。\u003c/li>\n\u003cli>影响判断：\u003c/li>\n\u003cli>平台服务商需要围绕“互联互通+资源规范”适配国家平台接口和标准。\u003c/li>\n\u003cli>区域教育项目中，标准化资源与数据服务比重上升。\u003c/li>\n\u003c/ul>"},{"heading":"五、政府政策与通知（含K12教辅政策全国盘点）","bodyHtml":"\u003cul>\n\u003cli>政策：教育部关于发布《中国青少年阅读素养框架》教育行业标准的通知（教语信函〔2026〕1号）\u003c/li>\n\u003cli>发布单位：教育部\u003c/li>\n\u003cli>发布时间：2026-04-15（官网发布：2026-04-17）\u003c/li>\n\u003cli>核心条款：\u003c/li>\n\u003cli>发布JY/T 0663-2026标准并自发布之日起施行。\u003c/li>\n\u003cli>为青少年阅读评价、课程实施和资源建设提供统一框架。\u003c/li>\n\u003cli>执行影响：\u003c/li>\n\u003cli>阅读评价工具、阅读课程、配套教辅需向标准化口径对齐。\u003c/li>\n\u003cli>内容研发和教师培训将更强调“阅读素养”而非单点知识。\u003c/li>\n\u003c/ul>\n\u003cul>\n\u003cli>K12教辅政策全国盘点（本周口径）：\u003c/li>\n\u003cli>教材教辅监管、评议、选用与进校园相关口径：本周公开信息以阅读素养行业标准与秋季用纸招采为主，未见新增专项「教辅进校园」监管文件条目。\u003c/li>\n\u003cli>重点省份执行差异或案例（若可获取）：上海及多区招生细则体现义务教育入口政策执行差异样本。\u003c/li>\n\u003cli>对我方选题、印制、渠道与数字形态的提示：秋季用纸采购与交付周期透明化，印制与成本预警需前置；阅读类产品向标准口径对齐。\u003c/li>\n\u003c/ul>"},{"heading":"六、运营行动建议（下周执行）","bodyHtml":"\u003cul>\n\u003cli>高优先级：按招生政策高频问答制作“家长解读卡”（报名节点、材料、禁区行为）并在渠道侧统一口径。\u003c/li>\n\u003cli>中优先级：对现有阅读类产品做一次与《阅读素养框架》的映射盘点，识别补强模块。\u003c/li>\n\u003cli>低优先级：跟踪区域招采公告，建立“纸张价格-交付周期”预警表。\u003c/li>\n\u003c/ul>"},{"heading":"七、风险与机会清单","bodyHtml":"\u003cul>\n\u003cli>风险：秋季征订链路前置导致供应链波动风险增大；招生政策解读不当可能引发舆情。\u003c/li>\n\u003cli>机会：阅读素养标准落地带来新一轮教辅迭代机会；阳光招生与数字化办理催生家校信息服务需求。\u003c/li>\n\u003c/ul>"},{"heading":"八、教辅行业会务计划（近60天）","bodyHtml":"\u003cul>\n\u003cli>会务名称：全国书会（用户线索，待主办方正式公告核验）\u003c/li>\n\u003cli>时间：2026-07-24（待核验）\u003c/li>\n\u003cli>地点：杭州（待核验）\u003c/li>\n\u003cli>主办/承办：待核验\u003c/li>\n\u003cli>与我方相关性：高（教材教辅展示、渠道拓展、合作洽谈）\u003c/li>\n\u003cli>建议动作：优先核验会务官网与官方发布，确认后列入重点参会并提前安排合作对接。\u003c/li>\n\u003cli>会务名称：2026春浙江馆藏图书展示会（已举办，作为行业样本跟踪）\u003c/li>\n\u003cli>时间：2026-03-24\u003c/li>\n\u003cli>地点：绍兴国际会展中心\u003c/li>\n\u003cli>主办/承办：浙江图书馆、浙江大学图书馆、浙江省新华书店集团等\u003c/li>\n\u003cli>与我方相关性：中高（馆配采购、纸电同采、数字资源进入馆配渠道）\u003c/li>\n\u003cli>建议动作：复盘其“纸电同采”模式，对标本地馆配合作路径。\u003c/li>\n\u003c/ul>"},{"heading":"九、出版社/教辅公司：出版及数智化方向最新动态","bodyHtml":"\u003cul>\n\u003cli>公司/机构：江苏凤凰出版传媒集团\u003c/li>\n\u003cli>出版侧（新品线、修订、丛书与重点SKU）：本周无单独收录（本会以数智教辅研讨为主）。\u003c/li>\n\u003cli>数智化侧（平台、产品、组织与业务升级）：召开“2026年数智教辅交流研讨会”，发布AI赋能教育出版计划与产品矩阵，推动跨区域资源共享。\u003c/li>\n\u003cli>来源：凤凰出版传媒集团官网（2026-03-20）\u003c/li>\n\u003cli>影响判断：行业数智化正进入“平台化+协同化”阶段，单点产品优势难以长期维持。\u003c/li>\n\u003cli>可跟进点：关注其对外合作机制、区域版本适配与内容共建方案。\u003c/li>\n\u003c/ul>"},{"heading":"十、出版社/教辅公司：跨行及与科技公司深度合作","bodyHtml":"\u003cul>\n\u003cli>公司/机构：人民教育出版社\u003c/li>\n\u003cli>合作方（跨行业/科技公司）：黄山旅游集团（文旅行业）\u003c/li>\n\u003cli>合作方向：落地“跟着课本游黄山”文教融合项目，形成课本IP场景化体验。\u003c/li>\n\u003cli>来源：中国教育新闻网（2026-04-07）\u003c/li>\n\u003cli>影响判断：出版品牌与文旅结合，可提升教材IP外延价值与用户触达深度。\u003c/li>\n\u003cli>可跟进点：筛选本地可复制线路，探索“教材内容+研学营地+文创”的合作包。\u003c/li>\n\u003cli>公司/机构：华东师范大学出版社\u003c/li>\n\u003cli>合作方（跨行业/科技公司）：宏思未来智能技术（教育机器人/AI技术）\u003c/li>\n\u003cli>合作方向：AI课程、教材融合出版、成果转化与国际化协同。\u003c/li>\n\u003cli>来源：公开财经媒体报道（2026-04-13）\u003c/li>\n\u003cli>影响判断：出版与技术跨界合作从试点走向体系化，内容生产链条将被重构。\u003c/li>\n\u003cli>可跟进点：优先跟进“可规模化落地”的产品形态（教师端智能工具、课堂场景应用）。\u003c/li>\n\u003c/ul>"}]}]</script>
   <script>
-    const chips = Array.from(document.querySelectorAll('.chip'));
-    const cards = Array.from(document.querySelectorAll('.card'));
-    chips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        chips.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        const filter = chip.getAttribute('data-filter');
-        cards.forEach(card => {
-          const tags = card.getAttribute('data-tags') || '';
-          card.style.display = (filter === 'all' || tags.includes(filter)) ? '' : 'none';
+    const WEEKLY_DATA = JSON.parse(document.getElementById('weekly-data').textContent);
+    (function () {
+      const strip = document.getElementById('weekStrip');
+      const meta = document.getElementById('boardMeta');
+      const panels = document.getElementById('boardPanels');
+      let active = 0;
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function renderWeekStrip() {
+        if (!WEEKLY_DATA.length) {
+          strip.innerHTML = '<span class="muted">暂无周报数据</span>';
+          return;
+        }
+        strip.innerHTML = WEEKLY_DATA.map(function (w, i) {
+          return (
+            '<button type="button" class="week-pill' + (i === 0 ? ' active' : '') + '" data-i="' +
+            i +
+            '" role="tab" aria-selected="' +
+            (i === 0) +
+            '">' +
+            esc(w.title) +
+            '</button>'
+          );
+        }).join('');
+        strip.querySelectorAll('.week-pill').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            active = +btn.getAttribute('data-i');
+            strip.querySelectorAll('.week-pill').forEach(function (b, j) {
+              b.classList.toggle('active', j === active);
+              b.setAttribute('aria-selected', j === active);
+            });
+            renderBoard();
+          });
+        });
+      }
+
+      function renderBoard() {
+        var w = WEEKLY_DATA[active];
+        if (!w) {
+          meta.innerHTML = '';
+          panels.innerHTML = '<p class="muted">无数据</p>';
+          return;
+        }
+        meta.innerHTML =
+          '<p class="board-lead">' +
+          w.summary +
+          '</p><a class="link-full" href="' +
+          esc(w.href) +
+          '">查看完整周报 →</a>';
+        if (!w.sections || !w.sections.length) {
+          panels.innerHTML = '<p class="muted">本周期 Markdown 中暂无「##」分节，请直接打开完整周报。</p>';
+          return;
+        }
+        panels.innerHTML = w.sections
+          .map(function (s) {
+            return (
+              '<section class="panel"><h3 class="panel-title">' +
+              esc(s.heading) +
+              '</h3><div class="panel-body">' +
+              s.bodyHtml +
+              '</div></section>'
+            );
+          })
+          .join('');
+      }
+
+      renderWeekStrip();
+      renderBoard();
+
+      var chips = Array.from(document.querySelectorAll('.toolbar .chip'));
+      var cards = Array.from(document.querySelectorAll('.card'));
+      chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          chips.forEach(function (c) {
+            c.classList.remove('active');
+          });
+          chip.classList.add('active');
+          var filter = chip.getAttribute('data-filter');
+          cards.forEach(function (card) {
+            var tags = card.getAttribute('data-tags') || '';
+            card.style.display = filter === 'all' || tags.includes(filter) ? '' : 'none';
+          });
         });
       });
-    });
+    })();
   </script>
 </body>
 </html>
