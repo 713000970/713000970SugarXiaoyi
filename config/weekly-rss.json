@@ -10,7 +10,7 @@
   "parseRssMax": 120,
   "maxItemsPerFeed": 8,
   "maxItemsTotal": 24,
-  "maxAgeDays": 0,
+  "maxAgeDays": 21,
   "titleKeywords": [
     "教育",
     "学校",

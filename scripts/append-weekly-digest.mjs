@@ -98,7 +98,7 @@ function loadConfig() {
     maxItemsPerFeed: Number(j.maxItemsPerFeed) || 8,
     maxItemsTotal: Number(j.maxItemsTotal) || 18,
     titleKeywords: Array.isArray(j.titleKeywords) ? j.titleKeywords : [],
-    maxAgeDays: Number.isFinite(Number(j.maxAgeDays)) ? Number(j.maxAgeDays) : 0,
+    maxAgeDays: Number.isFinite(Number(j.maxAgeDays)) ? Number(j.maxAgeDays) : 21,
     parseRssMax: Number(j.parseRssMax) || 120,
   };
 }
@@ -190,6 +190,8 @@ for (const f of cfg.feeds) {
       if (cfg.maxAgeDays > 0) {
         if (!ts) continue;
         if (ageDays(ts) > cfg.maxAgeDays) continue;
+        const y = new Date(ts).getFullYear();
+        if (y < new Date().getFullYear() - 1) continue;
       }
       pool.push({ name, title: it.title, link: it.link, pubDate: it.pubDate, ts });
     }
