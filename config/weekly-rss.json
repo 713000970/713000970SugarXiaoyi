@@ -1,0 +1,36 @@
+{
+  "_comment": "粒度：每条仅「标题 + 日期 + 原文链接」，不转载正文。\n\n信息源对照：\n• 中国政府网：官方稳定 XML 较少，下列使用 RSSHub 路由（公共实例 rsshub.app 在部分网络会 403，可整条 url 换成你自建的 RSSHub 域名或社区镜像）。\n• 教育部官网：同上，使用 RSSHub /gov/moe/* 路由。\n• 省/市教育厅：请在本数组末尾自行追加 { \"name\", \"url\" }，url 为厅站公开的 RSS 或你自建的 RSSHub 地址。\n• 微信公众号、服务号、小红书：无标准 RSS。需使用 RSSHub、wechat2rss、订阅号助手导出等生成订阅链接后填入 feeds；请遵守平台规则与版权。\n\n可调：maxAgeDays=0 不按日期过滤；设为 90 只保留近三个月内有 pubDate 的条目。",
+  "feeds": [
+    { "name": "人民网-教育", "url": "http://www.people.com.cn/rss/edu.xml" },
+    { "name": "中国政府网-最新政策", "url": "https://rsshub.app/gov/zhengce/zuixin" },
+    { "name": "教育部-最新文件", "url": "https://rsshub.app/gov/moe/newest_file" },
+    { "name": "教育部-公告公示", "url": "https://rsshub.app/gov/moe/notice" },
+    { "name": "教育部-教育要闻", "url": "https://rsshub.app/gov/moe/edu_ministry_news" }
+  ],
+  "parseRssMax": 120,
+  "maxItemsPerFeed": 8,
+  "maxItemsTotal": 24,
+  "maxAgeDays": 0,
+  "titleKeywords": [
+    "教育",
+    "学校",
+    "学生",
+    "教师",
+    "招生",
+    "教材",
+    "学前",
+    "义务",
+    "高考",
+    "职业",
+    "校园",
+    "双减",
+    "课程",
+    "部",
+    "通知",
+    "政策",
+    "国务院",
+    "中小学",
+    "幼儿园",
+    "学位"
+  ]
+}

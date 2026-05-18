@@ -84,12 +84,20 @@ if (centerLines.includes(weeklyLinkLine)) {
   }
   if (insertIndex >= centerLines.length) newLines.push(weeklyLinkLine);
 
-  fs.writeFileSync(newLines.join('\n') + (centerRaw.endsWith('\n') ? '\n' : ''), centerPath, 'utf8');
+  fs.writeFileSync(centerPath, newLines.join('\n') + (centerRaw.endsWith('\n') ? '\n' : ''), 'utf8');
   console.log(`Updated index: ${weeklyLinkLine}`);
 }
 
-const buildScript = path.join(ROOT, 'build.mjs');
-const r = spawnSync(process.execPath, [buildScript], { cwd: ROOT, stdio: 'inherit' });
-if (r.status !== 0) {
-  throw new Error(`build failed with exit code ${r.status === null ? 'null' : r.status}`);
+const skipBuild =
+  process.env.SKIP_BUILD === '1' ||
+  process.env.SKIP_BUILD === 'true' ||
+  process.env.SKIP_BUILD === 'yes';
+if (skipBuild) {
+  console.log('SKIP_BUILD set; skipping build (next step should run append-weekly-digest + build).');
+} else {
+  const buildScript = path.join(ROOT, 'build.mjs');
+  const r = spawnSync(process.execPath, [buildScript], { cwd: ROOT, stdio: 'inherit' });
+  if (r.status !== 0) {
+    throw new Error(`build failed with exit code ${r.status === null ? 'null' : r.status}`);
+  }
 }

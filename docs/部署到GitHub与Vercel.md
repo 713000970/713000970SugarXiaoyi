@@ -48,7 +48,7 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 ## 5. 每周一 10:00 自动上线（GitHub Actions）
 
-仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:00（UTC 周一 02:00）执行 `node scripts/create-weekly-report.mjs`，若有新文件或索引变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:00（UTC 周一 02:00）依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
 
 1. 打开 GitHub 仓库 **Settings → Actions → General**。
 2. 在 **Workflow permissions** 中选择 **Read and write permissions**，保存。

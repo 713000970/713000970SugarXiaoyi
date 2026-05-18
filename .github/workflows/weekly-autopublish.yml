@@ -34,8 +34,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create weekly skeleton and rebuild site
+      - name: Create weekly skeleton (no build)
+        env:
+          SKIP_BUILD: "1"
         run: node scripts/create-weekly-report.mjs
+
+      - name: Append RSS digest and build site
+        run: node scripts/append-weekly-digest.mjs
 
       - name: Commit and push if changed
         run: |
@@ -46,5 +51,5 @@ jobs:
             echo "No changes to commit (skeleton already present or only unrelated noise)."
             exit 0
           fi
-          git commit -m "chore(weekly): auto skeleton $(date -u +%Y-%m-%dT%H:%MZ)"
+          git commit -m "chore(weekly): skeleton + rss digest $(date -u +%Y-%m-%dT%H:%MZ)"
           git push
