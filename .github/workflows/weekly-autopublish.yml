@@ -1,6 +1,6 @@
 # 北京时间每周一 10:00：骨架 → RSS 摘录 → AI 填稿（需 Secret）→ build → push → Vercel
 # 依赖：Settings → Actions → Workflow permissions → Read and write permissions
-# 满篇干货：Settings → Secrets → ANTHROPIC_API_KEY 或 OPENAI_API_KEY
+# 满篇干货：Secrets 配 ANTHROPIC_API_KEY，或 OPENAI_API_KEY（国内可用 DeepSeek，见 config/weekly-fill.json 说明）
 
 name: Weekly skeleton and publish
 
@@ -49,6 +49,8 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
         run: node scripts/fill-weekly-content.mjs
 
       - name: Build site
