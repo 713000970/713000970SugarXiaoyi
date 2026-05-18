@@ -48,7 +48,16 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 ## 5. 每周一 10:00 自动上线（GitHub Actions）
 
-仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:00（UTC 周一 02:00）依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:00（UTC 周一 02:00）依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ **AI 撰写第一～十章**（需 Secret，见下）→ `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+
+### 每周一自动「满篇干货」（AI 填稿）
+
+1. 在 GitHub 仓库 **Settings → Secrets and variables → Actions** 新增其一：
+   - `ANTHROPIC_API_KEY`（推荐，模型见 `config/weekly-fill.json` 的 `anthropicModel`）
+   - 或 `OPENAI_API_KEY`（可选 `OPENAI_BASE_URL` 兼容网关）
+2. 范例文风来自 `config/weekly-fill.json` 的 `exampleWeeklyPath`（默认 `weekly/2026-W21-周报.md`），可换成你满意的一期。
+3. 本地联调：`npm run weekly:create`（= 骨架 + RSS + AI 填稿 + build）；仅重跑 AI：`npm run weekly:fill`（已有人工正文时默认跳过，强制覆盖设 `FORCE_WEEKLY_FILL=1`）。
+4. **质量说明**：成稿质量取决于 RSS 是否拉得到近 21 天条目；教育部/RSSHub 在 CI 上常失败时，建议在 `config/weekly-rss.json` 配置自建 RSSHub 或稳定源。重要发布前建议人工审阅第一章与政策条款。
 
 1. 打开 GitHub 仓库 **Settings → Actions → General**。
 2. 在 **Workflow permissions** 中选择 **Read and write permissions**，保存。

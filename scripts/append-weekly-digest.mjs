@@ -94,13 +94,38 @@ function loadConfig() {
   const raw = fs.readFileSync(p, 'utf8');
   const j = JSON.parse(raw);
   return {
-    feeds: Array.isArray(j.feeds) ? j.feeds : [],
+    feeds: expandFeedList(j),
     maxItemsPerFeed: Number(j.maxItemsPerFeed) || 8,
     maxItemsTotal: Number(j.maxItemsTotal) || 18,
     titleKeywords: Array.isArray(j.titleKeywords) ? j.titleKeywords : [],
     maxAgeDays: Number.isFinite(Number(j.maxAgeDays)) ? Number(j.maxAgeDays) : 21,
     parseRssMax: Number(j.parseRssMax) || 120,
   };
+}
+
+/** 直连 feeds + 可选 rssHubBase 一键拼接 rsshubRoutes */
+function expandFeedList(j) {
+  const feeds = Array.isArray(j.feeds) ? [...j.feeds] : [];
+  const base = String(j.rssHubBase || '').trim().replace(/\/$/, '');
+  const routes = Array.isArray(j.rsshubRoutes) ? j.rsshubRoutes : [];
+
+  if (base) {
+    for (const r of routes) {
+      const routePath = (r.path || r.route || '').trim();
+      if (!routePath) continue;
+      const pathPart = routePath.startsWith('/') ? routePath : `/${routePath}`;
+      feeds.push({
+        name: r.name || routePath,
+        url: `${base}${pathPart}`,
+      });
+    }
+  } else if (routes.length) {
+    console.warn(
+      '[digest] rssHubBase 为空：已跳过教育部/政府网 RSSHub 源。不会弄可先保持为空；有地址后只填 rssHubBase 一行即可。',
+    );
+  }
+
+  return feeds;
 }
 
 function itemTimestamp(pubDate) {
@@ -217,8 +242,16 @@ md = replaceDigestSection(md, digestBlock);
 fs.writeFileSync(weeklyPath, md, 'utf8');
 console.log(`Updated digest in ${weeklyPath} (${collected.length} bullets)`);
 
-const buildScript = path.join(ROOT, 'build.mjs');
-const r = spawnSync(process.execPath, [buildScript], { cwd: ROOT, stdio: 'inherit' });
-if (r.status !== 0) {
-  throw new Error(`build failed with exit code ${r.status === null ? 'null' : r.status}`);
+const skipBuild =
+  process.env.SKIP_BUILD === '1' ||
+  process.env.SKIP_BUILD === 'true' ||
+  process.env.SKIP_BUILD === 'yes';
+if (skipBuild) {
+  console.log('SKIP_BUILD set; skipping build (run fill + build in a later step).');
+} else {
+  const buildScript = path.join(ROOT, 'build.mjs');
+  const r = spawnSync(process.execPath, [buildScript], { cwd: ROOT, stdio: 'inherit' });
+  if (r.status !== 0) {
+    throw new Error(`build failed with exit code ${r.status === null ? 'null' : r.status}`);
+  }
 }
