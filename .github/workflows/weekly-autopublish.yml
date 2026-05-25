@@ -6,8 +6,13 @@ name: Weekly skeleton and publish
 
 on:
   schedule:
-    # 北京时间周一 10:00 = UTC 周一 02:00
-    - cron: "0 2 * * 1"
+    # 北京时间周一 10:00（主）+ 12:00 / 14:00（备用，GitHub schedule 偶发漏跑）
+    - cron: "0 10 * * 1"
+      timezone: Asia/Shanghai
+    - cron: "0 12 * * 1"
+      timezone: Asia/Shanghai
+    - cron: "0 14 * * 1"
+      timezone: Asia/Shanghai
   workflow_dispatch:
 
 permissions:
