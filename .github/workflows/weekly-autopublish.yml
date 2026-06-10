@@ -14,6 +14,15 @@ on:
     - cron: "0 14 * * 1"
       timezone: Asia/Shanghai
   workflow_dispatch:
+    inputs:
+      force_fill:
+        description: 强制 AI 重写第一～十章（当周已有正文时也覆盖）
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: write
@@ -53,6 +62,7 @@ jobs:
       - name: AI fill sections 1-10 (required for full report)
         env:
           CI: "true"
+          FORCE_WEEKLY_FILL: ${{ github.event.inputs.force_fill || 'false' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
