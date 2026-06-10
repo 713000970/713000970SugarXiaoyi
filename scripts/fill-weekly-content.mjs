@@ -215,9 +215,15 @@ if (!force && !isSkeletonSections(md)) {
 
 const hasKey = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 if (!hasKey) {
-  console.warn(
-    '[fill] No ANTHROPIC_API_KEY or OPENAI_API_KEY — skipping AI fill. Add a secret in GitHub Actions for full weekly drafts.',
-  );
+  const msg =
+    '[fill] No ANTHROPIC_API_KEY or OPENAI_API_KEY — cannot write sections 1–10. ' +
+    'Add Secrets in GitHub → Settings → Secrets and variables → Actions ' +
+    '(see config/weekly-fill.json: DeepSeek 可用 OPENAI_API_KEY + OPENAI_BASE_URL + OPENAI_MODEL).';
+  if (process.env.CI === 'true') {
+    console.error(msg);
+    process.exit(1);
+  }
+  console.warn(msg + ' Local run: skipping (exit 0).');
   process.exit(0);
 }
 

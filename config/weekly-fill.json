@@ -1,6 +1,6 @@
 {
   "_comment": "AI 填稿。国内无法用 Claude 时：在 GitHub Secrets 配 OPENAI_API_KEY + OPENAI_BASE_URL=https://api.deepseek.com/v1 + OPENAI_MODEL=deepseek-chat（DeepSeek 控制台申请）。或只配 OPENAI_API_KEY 走 OpenAI 官方（需可访问）。",
-  "exampleWeeklyPath": "weekly/2026-W21-周报.md",
+  "exampleWeeklyPath": "weekly/2026-W24-周报.md",
   "anthropicModel": "claude-sonnet-4-20250514",
   "openaiModel": "gpt-4o",
   "maxTokens": 8192
