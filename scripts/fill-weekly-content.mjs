@@ -207,8 +207,17 @@ if (!fs.existsSync(weeklyPath)) {
 
 let md = fs.readFileSync(weeklyPath, 'utf8');
 const force = ['1', 'true', 'yes'].includes(String(process.env.FORCE_WEEKLY_FILL || '').toLowerCase());
+const skeleton = isSkeletonSections(md);
 
-if (!force && !isSkeletonSections(md)) {
+console.log(
+  `[fill] ${weekCode} | skeleton=${skeleton} | force=${force} | ` +
+    `ANTHROPIC_API_KEY=${process.env.ANTHROPIC_API_KEY ? 'set' : 'missing'} | ` +
+    `OPENAI_API_KEY=${process.env.OPENAI_API_KEY ? 'set' : 'missing'} | ` +
+    `OPENAI_BASE_URL=${process.env.OPENAI_BASE_URL ? 'set' : 'missing'} | ` +
+    `OPENAI_MODEL=${process.env.OPENAI_MODEL || '(default)'}`,
+);
+
+if (!force && !skeleton) {
   console.log('[fill] Sections 1–10 already have content; skip (set FORCE_WEEKLY_FILL=1 to overwrite).');
   process.exit(0);
 }
