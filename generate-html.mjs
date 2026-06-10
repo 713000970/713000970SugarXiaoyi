@@ -23,6 +23,7 @@ function convertLinks(text) {
 
 function convertInlineMarkdown(text) {
   let safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  safe = safe.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
   safe = convertLinks(safe);
   return safe;
