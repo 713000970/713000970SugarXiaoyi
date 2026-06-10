@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
+import { applyDigestSection } from './weekly-digest-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -160,29 +161,6 @@ function sanitizeTitle(t) {
     .slice(0, 220);
 }
 
-function buildDigestMarkdown(lines) {
-  const body = lines.length
-    ? lines.map((l) => `- ${l}`).join('\n')
-    : '- （本周未拉取到条目：网络被拒、RSS 不可用，或需在 `config/weekly-rss.json` 中更换可访问的源）';
-  return [
-    '## 十一、自动摘录（政策与要闻，CI 每周更新）',
-    '> 以下为 `config/weekly-rss.json` 拉取的 **标题 + 日期 + 原文链接** 列表（不转载正文）；解读请在「三」「五」章补充。微信公众号 / 服务号 / 小红书等需自行提供可访问的 RSS（如 RSSHub、wechat2rss 等生成地址）并填入配置。',
-    '',
-    '<!-- AUTO_DIGEST_START -->',
-    body,
-    '<!-- AUTO_DIGEST_END -->',
-    '',
-  ].join('\n');
-}
-
-function replaceDigestSection(md, digestBlock) {
-  const block = digestBlock.trim();
-  if (/## 十一、自动摘录[\s\S]*?<!-- AUTO_DIGEST_END -->/.test(md)) {
-    return md.replace(/## 十一、自动摘录[\s\S]*?<!-- AUTO_DIGEST_END -->/m, block);
-  }
-  return `${md.trimEnd()}\n\n${block}\n`;
-}
-
 const today = new Date();
 const { year, week } = getIsoWeekInfo(today);
 const weekCode = `${year}-W${pad2(week)}`;
@@ -236,11 +214,14 @@ for (const it of pool) {
   collected.push(`**${title}** · ${d} · [原文](${it.link})（${it.name}）`);
 }
 
-const digestBlock = buildDigestMarkdown(collected);
 let md = fs.readFileSync(weeklyPath, 'utf8');
-md = replaceDigestSection(md, digestBlock);
+md = applyDigestSection(md, collected);
 fs.writeFileSync(weeklyPath, md, 'utf8');
-console.log(`Updated digest in ${weeklyPath} (${collected.length} bullets)`);
+console.log(
+  collected.length
+    ? `Updated digest in ${weeklyPath} (${collected.length} bullets)`
+    : `No RSS items — removed section 十一 from ${weeklyPath}`,
+);
 
 const skipBuild =
   process.env.SKIP_BUILD === '1' ||

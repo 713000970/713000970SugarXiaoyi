@@ -253,10 +253,6 @@ console.log(`[fill] Calling LLM for ${weekCode} (digest lines: ${digest.split('\
 const generated = normalizeLlmMarkdown(await generateBody(prompt, cfg));
 const header = extractHeader(md);
 const tail = extractSectionElevenOnward(md);
-if (!tail.includes('## 十一、')) {
-  throw new Error('Missing section 十一 in weekly file');
-}
-
-const out = `${header}${generated}\n${tail}`;
+const out = tail ? `${header}${generated}\n${tail}` : `${header}${generated}`;
 fs.writeFileSync(weeklyPath, out, 'utf8');
 console.log(`[fill] Wrote sections 1–10 to ${weeklyPath}`);

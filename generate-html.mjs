@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { stripEmptyDigestSection } from './scripts/weekly-digest-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname);
@@ -677,7 +678,7 @@ function main() {
 
   for (const full of weeklyPaths) {
     const name = path.basename(full);
-    const md = fs.readFileSync(full, 'utf8');
+    const md = stripEmptyDigestSection(fs.readFileSync(full, 'utf8'));
     const body = convertMarkdownToHtml(md);
     const base = path.basename(name, '.md');
     const htmlName = `${base}.html`;
