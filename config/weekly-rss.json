@@ -1,5 +1,5 @@
 {
-  "_comment": "【不会弄 RSSHub 时】保持 rssHubBase 为 \"\" 即可，周一仍会用 AI 写正文，只是「十一、自动摘录」条目少一些。\n【以后有 RSSHub 地址时】只改 rssHubBase 一行，例如 \"https://rss.你的域名.com\"，不要写 RSSHub 三个字。\n【直连源】feeds 里写完整 http(s) 地址；教育部等走下方 rsshubRoutes + rssHubBase 自动拼接。",
+  "_comment": "【不会弄 RSSHub 时】保持 rssHubBase 为 \"\" 即可，周一仍会用 AI 写正文，只是「十一、自动摘录」条目少一些。\n【社媒来源】B站/微博/小红书/公众号可在 rssHubBase 配置后追加 rsshubRoutes（如 /bilibili/user/video/uid、/weibo/user/uid 等），供第十一章摘录；AI 正文采编指引见 config/weekly-search-hints.json。\n【直连源】feeds 里写完整 http(s) 地址；教育部等走下方 rsshubRoutes + rssHubBase 自动拼接。",
   "rssHubBase": "",
   "feeds": [
     { "name": "人民网-教育", "url": "http://www.people.com.cn/rss/edu.xml" }

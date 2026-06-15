@@ -33,7 +33,8 @@ function pad2(n) {
 function loadFillConfig() {
   const p = path.join(ROOT, 'config', 'weekly-fill.json');
   const defaults = {
-    exampleWeeklyPath: 'weekly/2026-W21-周报.md',
+    exampleWeeklyPath: 'weekly/2026-W24-周报.md',
+    searchHintsPath: 'config/weekly-search-hints.json',
     anthropicModel: 'claude-sonnet-4-20250514',
     openaiModel: 'gpt-4o',
     maxTokens: 8192,
@@ -41,6 +42,52 @@ function loadFillConfig() {
   if (!fs.existsSync(p)) return defaults;
   const j = JSON.parse(fs.readFileSync(p, 'utf8'));
   return { ...defaults, ...j };
+}
+
+function loadSearchHints(cfg) {
+  const rel = cfg.searchHintsPath || 'config/weekly-search-hints.json';
+  const p = path.join(ROOT, rel);
+  if (!fs.existsSync(p)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function formatSearchHintsForPrompt(hints) {
+  if (!hints?.topics?.length) return '';
+  const lines = [
+    '## 采编方向（章节分类不变，据此丰富内容）',
+    '',
+    '各「板块」写入对应周报章节，**不得新增或改名章节**：',
+    '- **二**：出版社/教辅公司与各地教育部门深度合作',
+    '- **三、五**：K12教育政策全国盘点（三写事件与盘点，五写政策文件与教辅政策盘点）',
+    '- **四**：服务 K12 的平台动态（信息化/题库/AI 平台，可与科技公司合作互证）',
+    '- **七**：出版社/教辅公司出版及数智化',
+    '- **八**：出版社/教辅公司与科技公司深度合作',
+    '',
+  ];
+  for (const t of hints.topics) {
+    const ch = (t.weeklyChapters || []).join('、');
+    lines.push(`### ${t.label}（写入第 ${ch} 章）`);
+    lines.push(`- 搜索关键词：${(t.keywords || []).join('、')}`);
+    lines.push(`- 重点关注：${(t.focus || []).join('、')}`);
+    lines.push('');
+  }
+  const sp = hints.sourcePlatforms || {};
+  lines.push('## 信息来源渠道（每条资讯须标注来源平台）');
+  lines.push(`- **优先关注**：${(sp.priority || []).join('、')}`);
+  lines.push(`- **同时关注**：${(sp.officialAndIndustry || []).join('、')}`);
+  if (sp.note) lines.push(`- ${sp.note}`);
+  lines.push('');
+  lines.push('「来源」行格式（与范例层级一致，在「来源」上一行或同一行写明平台）：');
+  lines.push('- `来源平台：××（如 B站@账号 / 小红书@博主 / 微博话题#×× / 微信公众号「××」/ 中国教育报 / 教育部官网）`');
+  lines.push('- `来源：机构或账号（YYYY-MM-DD）· [原文](url)`');
+  lines.push('- 第一章摘要可在句末追加 `· 来源平台：××`，并保留 `· [原文](url)`');
+  lines.push('- **禁止编造**社媒帖子、账号名或无法核实的链接；仅官方/媒体可确认时写平台+链接，否则标注不确定性。');
+  lines.push('');
+  return lines.join('\n');
 }
 
 function extractDigestBullets(md) {
@@ -105,20 +152,20 @@ function findPreviousWeeklyPath(weekCode) {
   return fs.existsSync(p) ? p : null;
 }
 
-function buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt }) {
+function buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt, searchHintsBlock }) {
   return `你是一位教辅行业与 K12 教育政策分析师。请撰写 **${weekCode}** 周报的 Markdown 正文（第一至第十章，不要写第十一章）。
 
 ## 输出要求
 1. 语言：简体中文。
 2. 只输出从 \`## 一、本周核心摘要（3-5条）\` 到 \`## 十、风险与机会清单\` 的全部内容，不要输出一级标题和「更新时间」行。
 3. **章节顺序与序号固定**（先政策/行业，后运营侧，连续编号一至十）：一（摘要）→ 二（行业）→ 三（K12）→ 四（平台）→ 五（政策）→ 六（会务）→ 七（出版数智化）→ 八（跨行合作）→ 九（运营行动建议）→ 十（风险与机会）。
-4. 结构、层级、字段名必须与「范例周报」一致（事件/来源/要点/影响判断等子项保留）。
-5. 事实须基于下方「本周 RSS 摘录」；可结合常识做行业解读，但 **不得编造** 不存在的文件号、日期、机构名称；无可靠来源时写「本周公开稿未见」或「延续上周跟踪」。
-6. 第一章写 **3–5 条** 有信息量的摘要，关键数字、日期、地名用 **加粗**；**每条摘要末尾**须附「 · [原文](url)」（url 须来自 RSS 摘录或权威官网，勿虚构）。
-7. 「来源」行、政策条目的 **原文链接** 字段须使用 Markdown 链接「[原文](url)」或「[文件标题](url)」，确保各章每条新闻/政策均可点击跳转。
-8. 语气与篇幅参照范例，每周内容须与 RSS 及上周摘要区分，避免照抄范例。
+4. 结构、层级、字段名必须与「范例周报」一致（事件/来源/要点/影响判断等子项保留）；**每条资讯增加「来源平台」字段**（见下方采编方向）。
+5. 事实须结合下方「本周 RSS 摘录」与采编关键词方向组织内容；可综合公开信息做行业解读，但 **不得编造** 文件号、日期、机构、社媒账号或帖子；无可靠来源时写「本周公开稿未见」或「延续上周跟踪」。
+6. 第一章写 **3–5 条** 有信息量的摘要，关键数字、日期、地名用 **加粗**；每条末尾附「 · 来源平台：×× · [原文](url)」（url 须可核实，勿虚构）。
+7. 各章「来源」行须含 **来源平台** + Markdown 链接「[原文](url)」；政策条目 **原文链接** 字段同理。
+8. 每周尽量覆盖 **多来源渠道**（官方媒体、行业媒体、社媒教育账号等），同一事件可并列多个来源平台；语气与篇幅参照范例，与上周区分，避免照抄。
 
-## 本周信息
+${searchHintsBlock || ''}## 本周信息
 - 周次：${weekCode}
 - 更新日期：${dateCode}（周一）
 
@@ -256,7 +303,14 @@ if (prevPath) {
   prevExcerpt = s.slice(0, 2500);
 }
 
-const prompt = buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt });
+const prompt = buildPrompt({
+  weekCode,
+  dateCode,
+  digest,
+  example,
+  prevExcerpt,
+  searchHintsBlock: formatSearchHintsForPrompt(loadSearchHints(cfg)),
+});
 console.log(`[fill] Calling LLM for ${weekCode} (digest lines: ${digest.split('\n').filter(Boolean).length})...`);
 
 const generated = normalizeLlmMarkdown(await generateBody(prompt, cfg));
