@@ -1,25 +1,10 @@
-# 北京时间每周一 10:00：骨架 → RSS 摘录 → AI 填稿（需 Secret）→ build → push → Vercel
-# 依赖：Settings → Actions → Workflow permissions → Read and write permissions
-# 满篇干货：Secrets 配 ANTHROPIC_API_KEY，或 OPENAI_API_KEY（国内可用 DeepSeek，见 config/weekly-fill.json 说明）
+# 一键用 DeepSeek 强制重写当周周报第一～十章（force_fill=true），无需找下拉选项。
+# 用法：Actions → 左侧点本工作流 → Run workflow
 
-name: Weekly skeleton and publish
+name: Force AI refill (当前周报)
 
 on:
-  schedule:
-    # 北京时间周一 10:00（主）+ 12:00 / 14:00（备用，GitHub schedule 偶发漏跑）
-    - cron: "0 10 * * 1"
-      timezone: Asia/Shanghai
-    - cron: "0 12 * * 1"
-      timezone: Asia/Shanghai
-    - cron: "0 14 * * 1"
-      timezone: Asia/Shanghai
   workflow_dispatch:
-    inputs:
-      force_fill:
-        description: 勾选=强制 AI 重写第一～十章（覆盖当周已有正文）
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
@@ -56,10 +41,10 @@ jobs:
           SKIP_BUILD: "1"
         run: node scripts/append-weekly-digest.mjs
 
-      - name: AI fill sections 1-10 (required for full report)
+      - name: AI fill sections 1-10 (force overwrite)
         env:
           CI: "true"
-          FORCE_WEEKLY_FILL: ${{ github.event.inputs.force_fill == true && 'true' || 'false' }}
+          FORCE_WEEKLY_FILL: "true"
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
@@ -80,5 +65,5 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "chore(weekly): digest + AI draft $(date -u +%Y-%m-%dT%H:%MZ)"
+          git commit -m "chore(weekly): force AI refill $(date -u +%Y-%m-%dT%H:%MZ)"
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:main"
