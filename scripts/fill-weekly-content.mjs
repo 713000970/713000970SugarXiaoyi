@@ -69,7 +69,16 @@ function isSkeletonSections(body) {
   if (!block) return true;
   const bullets = [...block.matchAll(/^- (.+)$/gm)].map((x) => x[1].trim());
   if (!bullets.length) return true;
-  const substantive = bullets.filter((t) => t.length > 12 && !/^事件：?$/.test(t) && t !== '-');
+  const placeholder =
+    /^(事件：?|来源：|要点：|影响判断：|高优先级：|中优先级：|低优先级：|风险：|机会：|政策：|公司\/机构：|会务名称：|（可选）|发布单位：|发布时间：|核心条款：|执行影响：|国家层面要点：|省级重点变化|对我方|出版侧|数智化侧|合作方|合作方向|可跟进点|教材教辅|重点省份|教育部门|出版社\/教辅公司：|合作内容与期限：)$/;
+  const substantive = bullets.filter((t) => {
+    if (!t || t.length <= 2) return false;
+    if (placeholder.test(t)) return false;
+    if (/\[原文\]\(https:\/\/\.\.\.\)/.test(t)) return false;
+    if (/\[标题或文件号\]\(https:\/\/\.\.\.\)/.test(t)) return false;
+    if (/^来源：（媒体\/机构 \+ 日期）/.test(t)) return false;
+    return true;
+  });
   return substantive.length < 2;
 }
 
