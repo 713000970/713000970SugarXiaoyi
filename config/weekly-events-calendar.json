@@ -1,0 +1,42 @@
+{
+  "_comment": "行业会务/书展清单，按年维护。fill-weekly-content.mjs 按当周周一筛选：已结束 7 天内 + 未来 60 天内的事件注入 AI prompt，避免漏报 BIBF 等大展。",
+  "lookbackDays": 7,
+  "lookaheadDays": 60,
+  "events": [
+    {
+      "name": "第32届北京国际图书博览会（BIBF 2026）",
+      "start": "2026-06-17",
+      "end": "2026-06-21",
+      "location": "北京国家会议中心（朝阳区天辰东路7号）",
+      "organizer": "国家新闻出版署 / 中国图书进出口（集团）有限公司",
+      "theme": "以书为媒 交流对话 合作共赢",
+      "url": "https://www.bibf.net/",
+      "sourceNote": "首都之窗·北京日报 2026-06-11 发布会稿",
+      "relevance": "极高",
+      "keywords": ["BIBF", "北京国际图书博览会", "图书博览会", "版权贸易", "绘本展"],
+      "chapters": ["一", "二", "六", "七", "八"]
+    },
+    {
+      "name": "第34届全国图书交易博览会",
+      "start": "2026-07-24",
+      "end": "2026-07-27",
+      "location": "浙江杭州·杭州国际博览中心",
+      "organizer": "国家新闻出版署",
+      "url": "http://www.moe.gov.cn/srcsite/A06/s3327/202604/t20260420_1434185.html",
+      "relevance": "极高",
+      "keywords": ["全国书博会", "书博会", "馆配", "教辅少儿"],
+      "chapters": ["一", "二", "六", "九"]
+    },
+    {
+      "name": "2026年北京国际文学周（BIBF配套）",
+      "start": "2026-06-17",
+      "end": "2026-06-21",
+      "location": "北京（BIBF期间）",
+      "organizer": "BIBF组委会",
+      "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202606/t20260611_4695462.html",
+      "relevance": "中",
+      "keywords": ["北京国际文学周", "BIBF", "作家活动"],
+      "chapters": ["六", "七"]
+    }
+  ]
+}
