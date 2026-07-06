@@ -51,6 +51,9 @@ jobs:
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
         run: node scripts/fill-weekly-content.mjs
 
+      - name: Validate weekly report is publishable
+        run: node scripts/validate-weekly-content.mjs
+
       - name: Build site
         run: npm run build
 

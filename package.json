@@ -7,7 +7,8 @@
     "weekly:create": "node scripts/run-weekly-full.mjs",
     "weekly:skeleton": "node scripts/create-weekly-report.mjs",
     "weekly:digest": "node scripts/append-weekly-digest.mjs",
-    "weekly:fill": "node scripts/fill-weekly-content.mjs"
+    "weekly:fill": "node scripts/fill-weekly-content.mjs",
+    "weekly:validate": "node scripts/validate-weekly-content.mjs"
   },
   "engines": {
     "node": ">=18"

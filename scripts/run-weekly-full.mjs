@@ -28,6 +28,7 @@ function run(script) {
 run('create-weekly-report.mjs');
 run('append-weekly-digest.mjs');
 run('fill-weekly-content.mjs');
+run('validate-weekly-content.mjs');
 
 const buildScript = path.join(ROOT, 'build.mjs');
 const r = spawnSync(node, [buildScript], { cwd: ROOT, stdio: 'inherit' });
