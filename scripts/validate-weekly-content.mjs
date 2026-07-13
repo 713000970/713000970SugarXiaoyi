@@ -5,33 +5,14 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { currentBeijingWeekContext } from './weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}
-
-function getIsoWeekInfo(date) {
-  const y = date.getFullYear();
-  const m = date.getMonth();
-  const dom = date.getDate();
-  const tmp = new Date(y, m, dom);
-  const day = (tmp.getDay() + 6) % 7;
-  tmp.setDate(tmp.getDate() - day + 3);
-  const isoYear = tmp.getFullYear();
-  const jan4 = new Date(isoYear, 0, 4);
-  const jan4Day = (jan4.getDay() + 6) % 7;
-  const week1Monday = new Date(isoYear, 0, 4 - jan4Day);
-  const diffDays = Math.floor((tmp - week1Monday) / 86400000);
-  const week = 1 + Math.floor(diffDays / 7);
-  return { year: isoYear, week };
-}
-
 function currentWeeklyPath() {
-  const { year, week } = getIsoWeekInfo(new Date());
-  return path.join(ROOT, 'weekly', `${year}-W${pad2(week)}-周报.md`);
+  const { weekCode } = currentBeijingWeekContext();
+  return path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 }
 
 function extractSectionsOneToTen(md) {

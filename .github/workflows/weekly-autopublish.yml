@@ -1,4 +1,4 @@
-# 北京时间每周一 10:00：骨架 → RSS 摘录 → AI 填稿（需 Secret）→ build → push → Vercel
+# 北京时间每周一 10:05 起：骨架 → RSS 摘录 → AI 填稿（需 Secret）→ build → push → Vercel
 # 依赖：Settings → Actions → Workflow permissions → Read and write permissions
 # 满篇干货：Secrets 配 ANTHROPIC_API_KEY，或 OPENAI_API_KEY（国内可用 DeepSeek，见 config/weekly-fill.json 说明）
 
@@ -6,10 +6,9 @@ name: Weekly skeleton and publish
 
 on:
   schedule:
-    # GitHub cron 使用 UTC：北京时间周一 10:00（主）+ 12:00 / 14:00（备用）
-    - cron: "0 2 * * 1"
-    - cron: "0 4 * * 1"
-    - cron: "0 6 * * 1"
+    # GitHub cron 使用 UTC。避开每小时 00 分高负载；北京时间周一 10:05 / 10:20 / 10:35（主）+ 12:05 / 14:05（备用）
+    - cron: "5,20,35 2 * * 1"
+    - cron: "5 4,6 * * 1"
   workflow_dispatch:
     inputs:
       force_fill:
@@ -23,7 +22,7 @@ permissions:
 
 concurrency:
   group: weekly-autopublish
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   weekly:
@@ -56,7 +55,7 @@ jobs:
       - name: AI fill sections 1-10 (required for full report)
         env:
           CI: "true"
-          FORCE_WEEKLY_FILL: ${{ github.event.inputs.force_fill == true && 'true' || 'false' }}
+          FORCE_WEEKLY_FILL: ${{ inputs.force_fill && 'true' || 'false' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}

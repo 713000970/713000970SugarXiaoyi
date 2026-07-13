@@ -46,9 +46,9 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 无需打开 Cursor；只要改 Markdown 并推送即可。
 
-## 5. 每周一 10:00 自动上线（GitHub Actions）
+## 5. 每周一 10:05 起自动上线（GitHub Actions）
 
-仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:00（UTC 周一 02:00）依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ **AI 撰写第一～十章**（需 Secret，见下）→ `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:05 / 10:20 / 10:35 运行，12:05 / 14:05 备用（UTC 周一 02:05 / 02:20 / 02:35 / 04:05 / 06:05），依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ **AI 撰写第一～十章**（需 Secret，见下）→ 校验非空框架 → `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
 
 ### 每周一自动「满篇干货」（AI 填稿）
 

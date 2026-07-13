@@ -6,29 +6,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { currentBeijingWeekContext } from './weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-
-function getIsoWeekInfo(date) {
-  const y = date.getFullYear();
-  const m = date.getMonth();
-  const dom = date.getDate();
-  const tmp = new Date(y, m, dom);
-  const day = (tmp.getDay() + 6) % 7;
-  tmp.setDate(tmp.getDate() - day + 3);
-  const isoYear = tmp.getFullYear();
-  const jan4 = new Date(isoYear, 0, 4);
-  const jan4Day = (jan4.getDay() + 6) % 7;
-  const week1Monday = new Date(isoYear, 0, 4 - jan4Day);
-  const diffDays = Math.floor((tmp - week1Monday) / 86400000);
-  const week = 1 + Math.floor(diffDays / 7);
-  return { year: isoYear, week };
-}
-
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}
 
 function loadFillConfig() {
   const p = path.join(ROOT, 'config', 'weekly-fill.json');
@@ -379,10 +360,7 @@ function normalizeLlmMarkdown(text) {
 }
 
 const cfg = loadFillConfig();
-const today = new Date();
-const { year, week } = getIsoWeekInfo(today);
-const weekCode = `${year}-W${pad2(week)}`;
-const dateCode = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+const { date: today, weekCode, dateCode } = currentBeijingWeekContext();
 const weeklyPath = path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 
 if (!fs.existsSync(weeklyPath)) {
