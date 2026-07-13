@@ -494,7 +494,7 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:00 自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。底部可按标签筛选历史卡片。</p>
+      <p>每周一 10:05 起自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。底部可按标签筛选历史卡片。</p>
     </section>
 
     <p class="section-label">当前展示 · 选择周期</p>
