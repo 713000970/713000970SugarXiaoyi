@@ -14,7 +14,7 @@
       "sourceNote": "首都之窗·北京日报 2026-06-11 发布会稿",
       "relevance": "极高",
       "keywords": ["BIBF", "北京国际图书博览会", "图书博览会", "版权贸易", "绘本展"],
-      "chapters": ["一", "二", "六", "七", "八"]
+      "chapters": ["三", "五"]
     },
     {
       "name": "第34届全国图书交易博览会",
@@ -27,7 +27,7 @@
       "sourceNote": "新华网 2026-04-23；预备会见杭州网 2026-05-26",
       "relevance": "极高",
       "keywords": ["全国书博会", "书博会", "馆配", "教辅少儿"],
-      "chapters": ["一", "二", "六", "九"]
+      "chapters": ["三", "四"]
     },
     {
       "name": "2026年北京国际文学周（BIBF配套）",
@@ -38,7 +38,7 @@
       "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202606/t20260611_4695462.html",
       "relevance": "中",
       "keywords": ["北京国际文学周", "BIBF", "作家活动"],
-      "chapters": ["六", "七"]
+      "chapters": ["三"]
     }
   ]
 }
