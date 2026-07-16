@@ -17,7 +17,10 @@ function convertLinks(text) {
     if (h.startsWith('weekly/')) {
       h = 'weekly-html/' + h.slice('weekly/'.length);
     }
-    return `<a href="${h}">${label}</a>`;
+    const externalAttrs = /^https?:\/\//i.test(h) || h.startsWith('//')
+      ? ' target="_blank" rel="noopener noreferrer"'
+      : '';
+    return `<a href="${h}"${externalAttrs}>${label}</a>`;
   });
 }
 
