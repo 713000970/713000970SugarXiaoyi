@@ -23,9 +23,16 @@ const REQUIRED_SECTION_TITLES = [
   '五、科技合作',
   '六、评教辅行业',
 ];
+const ALLOWED_SECTION_TITLES = new Set(REQUIRED_SECTION_TITLES);
+const FORBIDDEN_PLACEHOLDER_RE =
+  /本周公开稿未见|未检索到|未见新的|暂无|待核验|建议继续跟进|不作为本周新闻|不作为本周.*动态|采编口径说明|会务日历背景/;
+const FORBIDDEN_FIELD_RE =
+  /^\s*-\s*(来源平台|来源|要点|影响判断|可跟进点|发布单位|发布时间|原文链接|核心条款|执行影响|出版社\/教辅公司|教育局\/学校\/事业单位|科技公司\/平台方|合作内容与期限|合作方向|本周动态|机会|风险|下周动作|公司\/机构|出版侧|数智化侧)：/m;
 
 function extractBusinessSections(md) {
-  const m = md.match(/## 一、[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/);
+  const m = md.match(
+    /## (?:一、K12教育政策|二、K12教辅政策|三、出版数智化|四、局社合作|五、科技合作|六、评教辅行业)[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/,
+  );
   return m ? m[0].trim() : '';
 }
 
@@ -84,6 +91,8 @@ function extractSection(md, start, end) {
 
 function extractNewsFreshnessBlock(md) {
   const sections = [
+    extractSection(md, '一', '二'),
+    extractSection(md, '二', '三'),
     extractSection(md, '三', '四'),
     extractSection(md, '四', '五'),
     extractSection(md, '五', '六'),
@@ -96,7 +105,6 @@ function oldDateMentionsInNewsSections(md, weekStart) {
   const block = extractNewsFreshnessBlock(md);
   if (!block) return [];
 
-  const allowedOldContext = /(不作为本周.*新闻|不作为本周.*动态|会务日历背景)/;
   const hits = [];
 
   const patterns = [
@@ -112,7 +120,6 @@ function oldDateMentionsInNewsSections(md, weekStart) {
       const d = parseYmd(ymd);
       if (!d || d >= weekStart) continue;
       const context = block.slice(Math.max(0, m.index - 180), Math.min(block.length, m.index + 160));
-      if (allowedOldContext.test(context)) continue;
       hits.push(`${ymd}: ${context.replace(/\s+/g, ' ').trim()}`);
     }
   }
@@ -181,26 +188,45 @@ function isSkeleton(md) {
   ];
   const substantive = bullets.filter((t) => !placeholder.some((re) => re.test(t)));
   const realLinks = (block.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
-  return substantive.length < 8 || realLinks < 3 || block.length < 5000;
+  return substantive.length < 3 || realLinks < 3;
+}
+
+function sectionTitles(business) {
+  return [...business.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim());
+}
+
+function topLevelItems(business) {
+  return [...business.matchAll(/^- .+$/gm)].map((m) => m[0]);
 }
 
 function validate(md, filePath) {
   const business = extractBusinessSections(md);
-  const headings = [...business.matchAll(/^##\s+[一二三四五六]、/gm)].length;
-  const missingSections = REQUIRED_SECTION_TITLES.filter((title) => !business.includes(`## ${title}`));
-  const firstSection = extractFirstSection(md);
-  const firstSectionBullets = [...firstSection.matchAll(/^\s*-\s+\S/gm)].length;
+  const headings = sectionTitles(business);
+  const invalidSections = headings.filter((title) => !ALLOWED_SECTION_TITLES.has(title));
+  const nestedBullets = [...business.matchAll(/^\s{2,}-\s+\S/gm)].length;
+  const items = topLevelItems(business);
   const linkCount = (business.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
+  const itemsWithoutLinks = items.filter((line) => !/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/.test(line));
+  const malformedItems = items.filter((line) => !/^- \*\*[^*]+\*\*：.+\]\(https?:\/\/(?!\.\.\.)[^)]+\)\s*$/.test(line));
   const { date: currentDate } = currentBeijingWeekContext();
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
   const oldNewsDates = oldDateMentionsInNewsSections(md, weekStart);
 
   const errors = [];
   if (isSkeleton(md)) errors.push('business sections still look like the template skeleton');
-  if (headings < 6) errors.push(`expected 6 business sections, found ${headings}`);
-  if (missingSections.length) errors.push(`missing required sections: ${missingSections.join(', ')}`);
-  if (firstSectionBullets < 2) errors.push(`expected at least 2 K12 policy bullets, found ${firstSectionBullets}`);
-  if (linkCount < 6) errors.push(`expected at least 6 source links across business sections, found ${linkCount}`);
+  if (!headings.length) errors.push('expected at least one business section with real items');
+  if (invalidSections.length) errors.push(`invalid section titles: ${invalidSections.join(', ')}`);
+  if (!items.length) errors.push('expected at least one concise news item');
+  if (nestedBullets) errors.push(`nested bullet fields are not allowed, found ${nestedBullets}`);
+  if (itemsWithoutLinks.length) errors.push(`items without source links: ${itemsWithoutLinks.slice(0, 3).join(' | ')}`);
+  if (malformedItems.length) {
+    errors.push(
+      `items must use "- **标题**：一句说明。[原文](url)": ${malformedItems.slice(0, 3).join(' | ')}`,
+    );
+  }
+  if (FORBIDDEN_FIELD_RE.test(business)) errors.push('field-style bullets are not allowed; use title + one-sentence intro + source link only');
+  if (FORBIDDEN_PLACEHOLDER_RE.test(business)) errors.push('placeholder/no-news explanations are not allowed; omit that item or section');
+  if (linkCount < items.length) errors.push(`expected one source link per item, found ${linkCount} links for ${items.length} items`);
   if (oldNewsDates.length) {
     errors.push(
       `news sections contain sources dated before this report week (${ymdFromDate(weekStart)}): ${oldNewsDates
