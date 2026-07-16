@@ -15,12 +15,21 @@ function currentWeeklyPath() {
   return path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 }
 
-function extractSectionsOneToTen(md) {
-  const m = md.match(/## 一、[\s\S]*?(?=## 十一、|$)/);
+const REQUIRED_SECTION_TITLES = [
+  '一、K12教育政策',
+  '二、K12教辅政策',
+  '三、出版数智化',
+  '四、局社合作',
+  '五、科技合作',
+  '六、评教辅行业',
+];
+
+function extractBusinessSections(md) {
+  const m = md.match(/## 一、[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/);
   return m ? m[0].trim() : '';
 }
 
-function extractSummary(md) {
+function extractFirstSection(md) {
   const m = md.match(/## 一、[\s\S]*?(?=## 二、|$)/);
   return m ? m[0] : '';
 }
@@ -67,19 +76,18 @@ function extractSection(md, start, end) {
   const startMatch = startRe.exec(md);
   if (!startMatch) return '';
   const rest = md.slice(startMatch.index);
-  const endRe = new RegExp(`\\n## ${end}、`);
+  const endLabel = /^[一二三四五六七八九十]$/.test(end) ? `${end}、` : end;
+  const endRe = new RegExp(`\\n## ${endLabel}`);
   const endMatch = endRe.exec(rest);
   return endMatch ? rest.slice(0, endMatch.index) : rest;
 }
 
 function extractNewsFreshnessBlock(md) {
   const sections = [
-    extractSection(md, '一', '二'),
-    extractSection(md, '二', '三'),
     extractSection(md, '三', '四'),
     extractSection(md, '四', '五'),
-    extractSection(md, '七', '八'),
-    extractSection(md, '八', '九'),
+    extractSection(md, '五', '六'),
+    extractSection(md, '六', '附录：自动摘录'),
   ];
   return sections.join('\n\n');
 }
@@ -88,7 +96,7 @@ function oldDateMentionsInNewsSections(md, weekStart) {
   const block = extractNewsFreshnessBlock(md);
   if (!block) return [];
 
-  const allowedOldContext = /(不作为本周新闻|不作为本周.*动态|会务日历背景)/;
+  const allowedOldContext = /(不作为本周.*新闻|不作为本周.*动态|会务日历背景)/;
   const hits = [];
 
   const patterns = [
@@ -103,7 +111,7 @@ function oldDateMentionsInNewsSections(md, weekStart) {
       const ymd = m.length === 2 ? m[1] : `${m[1]}-${m[2]}-${m[3]}`;
       const d = parseYmd(ymd);
       if (!d || d >= weekStart) continue;
-      const context = block.slice(Math.max(0, m.index - 80), Math.min(block.length, m.index + 120));
+      const context = block.slice(Math.max(0, m.index - 180), Math.min(block.length, m.index + 160));
       if (allowedOldContext.test(context)) continue;
       hits.push(`${ymd}: ${context.replace(/\s+/g, ' ').trim()}`);
     }
@@ -113,7 +121,7 @@ function oldDateMentionsInNewsSections(md, weekStart) {
 }
 
 function isSkeleton(md) {
-  const block = extractSectionsOneToTen(md);
+  const block = extractBusinessSections(md);
   if (!block) return true;
   if (
     /每条摘要末尾附来源平台/.test(block) ||
@@ -128,6 +136,9 @@ function isSkeleton(md) {
   const placeholder = [
     /^$/,
     /^事件：?\s*$/,
+    /^政策：?\s*$/,
+    /^合作事项：?\s*$/,
+    /^行业判断：?\s*$/,
     /^来源平台：.*$/,
     /^来源：\s*$/,
     /^来源：（媒体\/机构 \+ 日期）.*$/,
@@ -140,6 +151,9 @@ function isSkeleton(md) {
     /^机会：\s*$/,
     /^政策：\s*$/,
     /^公司\/机构：\s*$/,
+    /^出版社\/教辅公司：\s*$/,
+    /^教育局\/学校\/事业单位：\s*$/,
+    /^科技公司\/平台方：\s*$/,
     /^会务名称：\s*$/,
     /^（可选）.*$/,
     /^发布单位：\s*$/,
@@ -158,7 +172,6 @@ function isSkeleton(md) {
     /^教材教辅.*$/,
     /^重点省份.*$/,
     /^教育部门.*$/,
-    /^出版社\/教辅公司：\s*$/,
     /^合作内容与期限：\s*$/,
     /^时间：\s*$/,
     /^地点：\s*$/,
@@ -172,19 +185,22 @@ function isSkeleton(md) {
 }
 
 function validate(md, filePath) {
-  const headings = [...md.matchAll(/^##\s+[一二三四五六七八九十]、/gm)].length;
-  const summary = extractSummary(md);
-  const summaryBullets = [...summary.matchAll(/^\s*-\s+\S/gm)].length;
-  const summaryLinks = (summary.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
+  const business = extractBusinessSections(md);
+  const headings = [...business.matchAll(/^##\s+[一二三四五六]、/gm)].length;
+  const missingSections = REQUIRED_SECTION_TITLES.filter((title) => !business.includes(`## ${title}`));
+  const firstSection = extractFirstSection(md);
+  const firstSectionBullets = [...firstSection.matchAll(/^\s*-\s+\S/gm)].length;
+  const linkCount = (business.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
   const { date: currentDate } = currentBeijingWeekContext();
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
   const oldNewsDates = oldDateMentionsInNewsSections(md, weekStart);
 
   const errors = [];
-  if (isSkeleton(md)) errors.push('sections 1-10 still look like the template skeleton');
-  if (headings < 10) errors.push(`expected 10 numbered sections, found ${headings}`);
-  if (summaryBullets < 3) errors.push(`expected at least 3 summary bullets, found ${summaryBullets}`);
-  if (summaryLinks < 3) errors.push(`expected at least 3 summary links, found ${summaryLinks}`);
+  if (isSkeleton(md)) errors.push('business sections still look like the template skeleton');
+  if (headings < 6) errors.push(`expected 6 business sections, found ${headings}`);
+  if (missingSections.length) errors.push(`missing required sections: ${missingSections.join(', ')}`);
+  if (firstSectionBullets < 2) errors.push(`expected at least 2 K12 policy bullets, found ${firstSectionBullets}`);
+  if (linkCount < 6) errors.push(`expected at least 6 source links across business sections, found ${linkCount}`);
   if (oldNewsDates.length) {
     errors.push(
       `news sections contain sources dated before this report week (${ymdFromDate(weekStart)}): ${oldNewsDates

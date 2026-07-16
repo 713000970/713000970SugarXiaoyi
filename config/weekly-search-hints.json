@@ -1,5 +1,5 @@
 {
-  "_comment": "AI 填稿采编指引：章节分类不变，仅扩展检索关键词与信息来源渠道。对应关系见 weeklyChapters。",
+  "_comment": "AI 填稿采编指引：六板块固定为 K12教育政策 / K12教辅政策 / 出版数智化 / 局社合作 / 科技合作 / 评教辅行业。对应关系见 weeklySections。",
   "sourcePlatforms": {
     "priority": [
       "B站教育UP主动态",
@@ -23,7 +23,7 @@
     {
       "id": "k12-policy",
       "label": "K12教育政策全国盘点",
-      "weeklyChapters": ["三", "五"],
+      "weeklySections": ["一、K12教育政策"],
       "keywords": [
         "K12教育政策",
         "义务教育政策",
@@ -42,7 +42,7 @@
     {
       "id": "jiaofu-policy",
       "label": "K12教辅政策全国盘点",
-      "weeklyChapters": ["五"],
+      "weeklySections": ["二、K12教辅政策"],
       "keywords": [
         "教辅材料政策",
         "教辅出版监管",
@@ -58,7 +58,7 @@
     {
       "id": "publisher-digital",
       "label": "出版社/教辅公司出版及数智化最新动态",
-      "weeklyChapters": ["七"],
+      "weeklySections": ["三、出版数智化"],
       "keywords": [
         "人教社新动态",
         "北师大出版社",
@@ -76,7 +76,7 @@
     {
       "id": "publisher-edu-dept",
       "label": "出版社/教辅公司与各地教育部门深度合作",
-      "weeklyChapters": ["二"],
+      "weeklySections": ["四、局社合作"],
       "keywords": [
         "出版社与教育局合作",
         "教辅公司政府采购",
@@ -92,7 +92,7 @@
     {
       "id": "industry-expo",
       "label": "行业会务与书展（BIBF/全国书博会等）",
-      "weeklyChapters": ["一", "二", "六"],
+      "weeklySections": ["六、评教辅行业"],
       "keywords": [
         "BIBF",
         "北京国际图书博览会",
@@ -116,7 +116,7 @@
     {
       "id": "publisher-tech",
       "label": "出版社/教辅公司与科技公司深度合作",
-      "weeklyChapters": ["八"],
+      "weeklySections": ["五、科技合作"],
       "keywords": [
         "出版社与科技公司合作",
         "教辅公司AI合作",

@@ -235,6 +235,9 @@ function parseWeeklySections(markdownText, maxBodyChars) {
     const trimmed = lines[i].trim();
     if (/^##\s/.test(trimmed) && !/^###\s/.test(trimmed)) {
       const heading = trimmed.replace(/^##\s+/, '').replace(/\*\*/g, '').trim();
+      if (heading.startsWith('附录：自动摘录') || heading.startsWith('十一、自动摘录')) {
+        break;
+      }
       i++;
       const bodyLines = [];
       while (i < lines.length) {

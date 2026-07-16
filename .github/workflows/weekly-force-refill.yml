@@ -1,4 +1,4 @@
-# 一键用 DeepSeek 强制重写当周周报第一～十章（force_fill=true），无需找下拉选项。
+# 一键用 DeepSeek 强制重写当周周报六个业务板块，无需找下拉选项。
 # 用法：Actions → 左侧点本工作流 → Run workflow
 
 name: Force AI refill (当前周报)
@@ -41,7 +41,7 @@ jobs:
           SKIP_BUILD: "1"
         run: node scripts/append-weekly-digest.mjs
 
-      - name: AI fill sections 1-10 (force overwrite)
+      - name: AI fill six business sections (force overwrite)
         env:
           CI: "true"
           FORCE_WEEKLY_FILL: "true"

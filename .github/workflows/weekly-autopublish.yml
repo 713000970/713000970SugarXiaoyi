@@ -1,4 +1,4 @@
-# 北京时间每周一 10:05 起：骨架 → RSS 摘录 → AI 填稿（需 Secret）→ build → push → Vercel
+# 北京时间每周一 10:05 起：骨架 → RSS 摘录 → AI 填写六个业务板块（需 Secret）→ build → push → Vercel
 # 依赖：Settings → Actions → Workflow permissions → Read and write permissions
 # 满篇干货：Secrets 配 ANTHROPIC_API_KEY，或 OPENAI_API_KEY（国内可用 DeepSeek，见 config/weekly-fill.json 说明）
 
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       force_fill:
-        description: 勾选=强制 AI 重写第一～十章（覆盖当周已有正文）
+        description: 勾选=强制 AI 重写六个业务板块（覆盖当周已有正文）
         required: false
         default: false
         type: boolean
@@ -52,7 +52,7 @@ jobs:
           SKIP_BUILD: "1"
         run: node scripts/append-weekly-digest.mjs
 
-      - name: AI fill sections 1-10 (required for full report)
+      - name: AI fill six business sections (required for full report)
         env:
           CI: "true"
           FORCE_WEEKLY_FILL: ${{ inputs.force_fill && 'true' || 'false' }}

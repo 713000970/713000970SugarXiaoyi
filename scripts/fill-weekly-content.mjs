@@ -1,12 +1,12 @@
 /**
- * 用 LLM 根据 RSS 摘录 + 范例周报，将当周 markdown 第一～十章写成「满篇干货」。
+ * 用 LLM 根据 RSS 摘录 + 范例周报，将当周 markdown 六个业务板块写成「满篇干货」。
  * 需环境变量 ANTHROPIC_API_KEY 或 OPENAI_API_KEY；无密钥时跳过（exit 0）。
- * 保留「十一、自动摘录」节不变。
+ * 保留「附录：自动摘录」节不变。
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { currentBeijingWeekContext } from './weekly-date-utils.mjs';
+import { currentBeijingWeekContext, pad2 } from './weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -81,8 +81,8 @@ function formatEventsForPrompt(calendar, refDate) {
   const lines = [
     '## 近60天行业会务清单（config/weekly-events-calendar.json，仅作日历背景）',
     '',
-    '以下会展只代表近60天会务安排，**默认只写入第六章「会务计划」或第九/十章行动建议**。',
-    '**新闻时效硬规则**：若会展只有历史官宣/预备会链接（发布时间不在本周采编窗口），不得写入第一章摘要、第二章行业动态、第四章平台动态、第七/八章企业动态；只有当本周 RSS/公开检索出现当周发布的新稿，才可作为本周新闻推进。',
+    '以下会展只代表近60天会务安排，**默认只作为第六板块「评教辅行业」里的行业判断/下周动作背景**。',
+    '**新闻时效硬规则**：若会展只有历史官宣/预备会链接（发布时间不在本周采编窗口），不得包装成本周新闻；只有当本周 RSS/公开检索出现当周发布的新稿，才可作为本周动态推进。',
     '',
   ];
   for (const ev of relevant) {
@@ -103,7 +103,7 @@ function formatEventsForPrompt(calendar, refDate) {
     lines.push('');
   }
   lines.push(
-    '若 RSS 未摘录到上述会展，只能写入第六章会务日历；链接优先用日历 url，或检索官媒后附 [原文](url)。',
+    '若 RSS 未摘录到上述会展，只能写入第六板块的会务日历/行动背景，并标注“不作为本周新闻”。',
     '',
   );
   return lines.join('\n');
@@ -112,20 +112,20 @@ function formatEventsForPrompt(calendar, refDate) {
 function formatSearchHintsForPrompt(hints) {
   if (!hints?.topics?.length) return '';
   const lines = [
-    '## 采编方向（章节分类不变，据此丰富内容）',
+    '## 采编方向（六板块分类不变，据此丰富内容）',
     '',
     '各「板块」写入对应周报章节，**不得新增或改名章节**：',
-    '- **二**：出版社/教辅公司与各地教育部门深度合作 + 当周书展/馆配行业动态（必须是本周发布的新消息）',
-    '- **三、五**：K12教育政策全国盘点（三写事件与盘点，五写政策文件与教辅政策盘点）',
-    '- **四**：服务 K12 的平台动态（信息化/题库/AI 平台，可与科技公司合作互证）',
-    '- **六**：教辅行业会务计划（近60天，**至少2条**，含书展/BIBF/订货会等）',
-    '- **七**：出版社/教辅公司出版及数智化',
-    '- **八**：出版社/教辅公司与科技公司深度合作',
+    '- **一 K12教育政策**：教育部、省市教育局、考试招生、双减、课后服务、校外培训治理等 K12 政策动态。',
+    '- **二 K12教辅政策**：教材教辅目录、评议选用、进校合规、出版监管、广告/收费/AI 配套合规。',
+    '- **三 出版数智化**：出版社/教辅公司新品线、数字教材、AI 教辅、题库、资源平台、业务升级。',
+    '- **四 局社合作**：教育局/学校/事业单位与出版社/教辅公司的合作、共建、公益服务、区域试点。',
+    '- **五 科技合作**：出版社/教辅公司与 AI/题库/平台/硬件/数据服务商合作。',
+    '- **六 评教辅行业**：本周行业判断、会务日历背景、机会、风险、下周动作。',
     '',
   ];
   for (const t of hints.topics) {
-    const ch = (t.weeklyChapters || []).join('、');
-    lines.push(`### ${t.label}（写入第 ${ch} 章）`);
+    const ch = (t.weeklyChapters || t.weeklySections || []).join('、');
+    lines.push(`### ${t.label}（参考写入：${ch || '按六板块归类'}）`);
     lines.push(`- 搜索关键词：${(t.keywords || []).join('、')}`);
     lines.push(`- 重点关注：${(t.focus || []).join('、')}`);
     lines.push('');
@@ -139,8 +139,8 @@ function formatSearchHintsForPrompt(hints) {
   lines.push('「来源」行格式（与范例层级一致，在「来源」上一行或同一行写明平台）：');
   lines.push('- `来源平台：××（如 B站@账号 / 小红书@博主 / 微博话题#×× / 微信公众号「××」/ 中国教育报 / 教育部官网）`');
   lines.push('- `来源：机构或账号（YYYY-MM-DD）· [原文](url)`');
-  lines.push('- 第一章摘要可在句末追加 `· 来源平台：××`，并保留 `· [原文](url)`');
-  lines.push('- **新闻时效**：第一、二、四、七、八章只收本周采编窗口内发布/更新的新闻；旧政策、旧官宣、旧预备会只能放第五章政策背景或第六章会务日历。');
+  lines.push('- 各板块条目可在句末追加 `· 来源平台：××`，并保留 `· [原文](url)`');
+  lines.push('- **新闻时效**：各板块的“本周动态”只收本周采编窗口内发布/更新的新闻；旧政策、旧官宣、旧预备会只能作为政策背景或第六板块行业判断/会务日历。');
   lines.push('- **禁止编造**社媒帖子、账号名或无法核实的链接；仅官方/媒体可确认时写平台+链接，否则标注不确定性。');
   lines.push('');
   return lines.join('\n');
@@ -152,8 +152,8 @@ function extractDigestBullets(md) {
   return m[1].trim();
 }
 
-function extractSectionsOneToTen(md) {
-  const m = md.match(/## 一、[\s\S]*?(?=## 十一、|$)/);
+function extractBusinessSections(md) {
+  const m = md.match(/## 一、[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/);
   return m ? m[0].trim() : '';
 }
 
@@ -162,13 +162,15 @@ function extractHeader(md) {
   return m ? m[0].trimEnd() + '\n\n' : '';
 }
 
-function extractSectionElevenOnward(md) {
-  const idx = md.indexOf('## 十一、自动摘录');
-  return idx >= 0 ? md.slice(idx).trimEnd() + '\n' : '';
+function extractDigestAppendixOnward(md) {
+  const appendixIdx = md.indexOf('## 附录：自动摘录');
+  if (appendixIdx >= 0) return md.slice(appendixIdx).trimEnd() + '\n';
+  const legacyIdx = md.indexOf('## 十一、自动摘录');
+  return legacyIdx >= 0 ? md.slice(legacyIdx).trimEnd() + '\n' : '';
 }
 
 function isSkeletonSections(body) {
-  const block = extractSectionsOneToTen(body);
+  const block = extractBusinessSections(body);
   if (!block) return true;
 
   if (
@@ -185,6 +187,9 @@ function isSkeletonSections(body) {
 
   const placeholder = [
     /^事件：?\s*$/,
+    /^政策：?\s*$/,
+    /^合作事项：?\s*$/,
+    /^行业判断：?\s*$/,
     /^来源平台：.*$/,
     /^来源：\s*$/,
     /^来源：（媒体\/机构 \+ 日期）.*$/,
@@ -197,6 +202,9 @@ function isSkeletonSections(body) {
     /^机会：\s*$/,
     /^政策：\s*$/,
     /^公司\/机构：\s*$/,
+    /^出版社\/教辅公司：\s*$/,
+    /^教育局\/学校\/事业单位：\s*$/,
+    /^科技公司\/平台方：\s*$/,
     /^会务名称：\s*$/,
     /^（可选）.*$/,
     /^发布单位：\s*$/,
@@ -215,7 +223,6 @@ function isSkeletonSections(body) {
     /^教材教辅.*$/,
     /^重点省份.*$/,
     /^教育部门.*$/,
-    /^出版社\/教辅公司：\s*$/,
     /^合作内容与期限：\s*$/,
     /^时间：\s*$/,
     /^地点：\s*$/,
@@ -242,7 +249,7 @@ function readExampleBody(cfg) {
   const p = path.join(ROOT, rel);
   if (!fs.existsSync(p)) return '';
   const md = fs.readFileSync(p, 'utf8');
-  const sample = extractSectionsOneToTen(md);
+  const sample = extractBusinessSections(md);
   return sample.slice(0, 12000);
 }
 
@@ -261,26 +268,24 @@ function findPreviousWeeklyPath(weekCode) {
 }
 
 function buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt, searchHintsBlock, eventsBlock }) {
-  return `你是一位教辅行业与 K12 教育政策分析师。请撰写 **${weekCode}** 周报的 Markdown 正文（第一至第十章，不要写第十一章）。
+  return `你是一位教辅行业与 K12 教育政策分析师。请撰写 **${weekCode}** 周报的 Markdown 正文（只写六个业务板块，不要写附录）。
 
 ## 输出要求
 1. 语言：简体中文。
-2. 只输出从 \`## 一、本周核心摘要（3-5条）\` 到 \`## 十、风险与机会清单\` 的全部内容，不要输出一级标题和「更新时间」行。
-3. **章节顺序与序号固定**（先政策/行业，后运营侧，连续编号一至十）：一（摘要）→ 二（行业）→ 三（K12）→ 四（平台）→ 五（政策）→ 六（会务）→ 七（出版数智化）→ 八（跨行合作）→ 九（运营行动建议）→ 十（风险与机会）。
-4. 结构、层级、字段名必须与「范例周报」一致（事件/来源/要点/影响判断等子项保留）；**每条资讯增加「来源平台」字段**（见下方采编方向）。
+2. 只输出从 \`## 一、K12教育政策\` 到 \`## 六、评教辅行业\` 的全部内容，不要输出一级标题、「更新时间」行或附录。
+3. **章节顺序与标题固定**：一、K12教育政策 → 二、K12教辅政策 → 三、出版数智化 → 四、局社合作 → 五、科技合作 → 六、评教辅行业。
+4. 每个板块至少 2 条实质内容；每条资讯必须包含「来源平台」和 Markdown 原文链接。没有本周新公开稿时，明确写“本周公开稿未见”，不要编造。
 5. 事实须结合「本周 RSS 摘录」与采编关键词组织内容；不得编造文件号、日期、机构、社媒账号。
-5b. **本周新闻硬规则**：第一章摘要、第二章行业动态、第四章平台动态、第七章出版数智化、第八章合作动态，只允许采用本周采编窗口内发布/更新的消息。早于本周的旧政策、旧官宣、旧预备会、旧活动报道不得包装成“本周动态”。
-5c. **会务清单只作日历背景**：BIBF/书博会等会展如果只有历史官宣链接，只能写入第六章会务计划或第九/十章行动建议；只有检索到本周发布的新稿，才可写入摘要、行业动态、平台动态或企业动态。
-6. **第六章「教辅行业会务计划（近60天）」至少 2 条**；若下方会务清单非空，清单内每条会展均须有对应条目（已结束写复盘，未开幕写筹备/倒计时），并标明“会务日历，不作为本周新闻”。
-7. 第一章写 **3–5 条** 摘要，关键数字、日期、地名用 **加粗**；每条末尾附「 · 来源平台：×× · [原文](url)」。若书展/会务没有本周新稿，第一章不得写书展/会务摘要。
-8. 各章「来源」行须含 **来源平台** + Markdown 链接；每周覆盖多来源渠道，与上周区分，避免照抄。
+6. **本周新闻硬规则**：各板块“本周动态”只允许采用本周采编窗口内发布/更新的消息。早于本周的旧政策、旧官宣、旧预备会、旧活动报道不得包装成“本周动态”。
+7. **会务清单只作日历背景**：BIBF/书博会等会展如果只有历史官宣链接，只能写入第六板块「评教辅行业」的行业判断/下周动作，并标明“不作为本周新闻”；只有检索到本周发布的新稿，才可写入动态判断。
+8. 第六板块必须包含「本周动态」「机会」「风险」「下周动作」四个子项。
 
 ${searchHintsBlock || ''}${eventsBlock || ''}## 本周信息
 - 周次：${weekCode}
 - 更新日期：${dateCode}（周一）
 
 ## 本周 RSS 摘录（标题+链接，请据此检索要点，勿虚构链接）
-${digest || '（暂无 RSS 条目：不得用旧官宣硬凑本周新闻；请写本周阶段性变化、政策执行窗口、运营动作，并把旧资料放在第五/第六章背景中）'}
+${digest || '（暂无 RSS 条目：不得用旧官宣硬凑本周新闻；请写本周阶段性变化、政策执行窗口、运营动作，并把旧资料放在背景或第六板块行业判断中）'}
 
 ## 上周摘要节选（供延续跟踪，勿重复堆砌）
 ${prevExcerpt || '（无上周文件）'}
@@ -382,14 +387,14 @@ console.log(
 );
 
 if (!force && !skeleton) {
-  console.log('[fill] Sections 1–10 already have content; skip (set FORCE_WEEKLY_FILL=1 to overwrite).');
+  console.log('[fill] Six business sections already have content; skip (set FORCE_WEEKLY_FILL=1 to overwrite).');
   process.exit(0);
 }
 
 const hasKey = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 if (!hasKey) {
   const msg =
-    '[fill] No ANTHROPIC_API_KEY or OPENAI_API_KEY — cannot write sections 1–10. ' +
+    '[fill] No ANTHROPIC_API_KEY or OPENAI_API_KEY — cannot write six business sections. ' +
     'Add Secrets in GitHub → Settings → Secrets and variables → Actions ' +
     '(see config/weekly-fill.json: DeepSeek 可用 OPENAI_API_KEY + OPENAI_BASE_URL + OPENAI_MODEL).';
   if (process.env.CI === 'true') {
@@ -406,7 +411,7 @@ const prevPath = findPreviousWeeklyPath(weekCode);
 let prevExcerpt = '';
 if (prevPath) {
   const prev = fs.readFileSync(prevPath, 'utf8');
-  const s = extractSectionsOneToTen(prev);
+  const s = extractBusinessSections(prev);
   prevExcerpt = s.slice(0, 2500);
 }
 
@@ -423,7 +428,7 @@ console.log(`[fill] Calling LLM for ${weekCode} (digest lines: ${digest.split('\
 
 const generated = normalizeLlmMarkdown(await generateBody(prompt, cfg));
 const header = extractHeader(md);
-const tail = extractSectionElevenOnward(md);
+const tail = extractDigestAppendixOnward(md);
 const out = tail ? `${header}${generated}\n${tail}` : `${header}${generated}`;
 fs.writeFileSync(weeklyPath, out, 'utf8');
-console.log(`[fill] Wrote sections 1–10 to ${weeklyPath}`);
+console.log(`[fill] Wrote six business sections to ${weeklyPath}`);

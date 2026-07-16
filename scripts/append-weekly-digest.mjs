@@ -1,5 +1,5 @@
 /**
- * 按 config/weekly-rss.json 拉取 RSS 标题与链接，写入当周 weekly/*.md 的「十一」节（AUTO_DIGEST 标记之间），并执行 build。
+ * 按 config/weekly-rss.json 拉取 RSS 标题与链接，写入当周 weekly/*.md 的「附录：自动摘录」（AUTO_DIGEST 标记之间），并执行 build。
  * 供 GitHub Actions 与本机 `npm run weekly:digest` 使用。
  */
 import fs from 'fs';
@@ -199,7 +199,7 @@ fs.writeFileSync(weeklyPath, md, 'utf8');
 console.log(
   collected.length
     ? `Updated digest in ${weeklyPath} (${collected.length} bullets)`
-    : `No RSS items — removed section 十一 from ${weeklyPath}`,
+    : `No RSS items — removed digest appendix from ${weeklyPath}`,
 );
 
 const skipBuild =
