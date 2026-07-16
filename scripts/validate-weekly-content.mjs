@@ -22,6 +22,7 @@ const REQUIRED_SECTION_TITLES = [
   '四、局社合作',
   '五、科技合作',
   '六、评教辅行业',
+  '七、政策解读',
 ];
 const ALLOWED_SECTION_TITLES = new Set(REQUIRED_SECTION_TITLES);
 const FORBIDDEN_PLACEHOLDER_RE =
@@ -31,7 +32,7 @@ const FORBIDDEN_FIELD_RE =
 
 function extractBusinessSections(md) {
   const m = md.match(
-    /## (?:一、K12教育政策|二、K12教辅政策|三、出版数智化|四、局社合作|五、科技合作|六、评教辅行业)[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/,
+    /## (?:一、K12教育政策|二、K12教辅政策|三、出版数智化|四、局社合作|五、科技合作|六、评教辅行业|七、政策解读)[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/,
   );
   return m ? m[0].trim() : '';
 }
@@ -96,7 +97,8 @@ function extractNewsFreshnessBlock(md) {
     extractSection(md, '三', '四'),
     extractSection(md, '四', '五'),
     extractSection(md, '五', '六'),
-    extractSection(md, '六', '附录：自动摘录'),
+    extractSection(md, '六', '七'),
+    extractSection(md, '七', '附录：自动摘录'),
   ];
   return sections.join('\n\n');
 }
@@ -199,6 +201,10 @@ function topLevelItems(business) {
   return [...business.matchAll(/^- .+$/gm)].map((m) => m[0]);
 }
 
+function extractPolicyInterpretationSection(md) {
+  return extractSection(md, '七', '附录：自动摘录');
+}
+
 function validate(md, filePath) {
   const business = extractBusinessSections(md);
   const headings = sectionTitles(business);
@@ -211,6 +217,11 @@ function validate(md, filePath) {
   const { date: currentDate } = currentBeijingWeekContext();
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
   const oldNewsDates = oldDateMentionsInNewsSections(md, weekStart);
+  const policyInterpretation = extractPolicyInterpretationSection(md);
+  const policyInterpretationItems = policyInterpretation ? topLevelItems(policyInterpretation) : [];
+  const malformedPolicyInterpretationItems = policyInterpretationItems.filter(
+    (line) => !/(政策解读|解读|问答|图解|一图读懂|专家解读|答记者问|读懂|说明|释疑)/.test(line),
+  );
 
   const errors = [];
   if (isSkeleton(md)) errors.push('business sections still look like the template skeleton');
@@ -231,6 +242,13 @@ function validate(md, filePath) {
     errors.push(
       `news sections contain sources dated before this report week (${ymdFromDate(weekStart)}): ${oldNewsDates
         .slice(0, 5)
+        .join(' | ')}`,
+    );
+  }
+  if (malformedPolicyInterpretationItems.length) {
+    errors.push(
+      `policy interpretation items must be actual interpretation/Q&A/infographic/expert-explanation articles: ${malformedPolicyInterpretationItems
+        .slice(0, 3)
         .join(' | ')}`,
     );
   }

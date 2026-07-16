@@ -17,6 +17,7 @@ const ORDERED = [
   '## 四、局社合作',
   '## 五、科技合作',
   '## 六、评教辅行业',
+  '## 七、政策解读',
 ];
 
 function checkMarkdown(md, filePath) {

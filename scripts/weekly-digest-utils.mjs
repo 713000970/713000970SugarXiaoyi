@@ -41,7 +41,7 @@ export function buildDigestMarkdown(lines) {
   const body = lines.map((l) => `- ${l}`).join('\n');
   return [
     '## 附录：自动摘录（政策与要闻，CI 每周更新）',
-    '> 以下为 `config/weekly-rss.json` 拉取的 **标题 + 日期 + 原文链接** 列表（不转载正文）；解读请归入上方六个业务板块。微信公众号 / 服务号 / 小红书等需自行提供可访问的 RSS（如 RSSHub、wechat2rss 等生成地址）并填入配置。',
+    '> 以下为 `config/weekly-rss.json` 拉取的 **标题 + 日期 + 原文链接** 列表（不转载正文）；解读请归入上方七个业务板块。微信公众号 / 服务号 / 小红书等需自行提供可访问的 RSS（如 RSSHub、wechat2rss 等生成地址）并填入配置。',
     '',
     '<!-- AUTO_DIGEST_START -->',
     body,
