@@ -25,6 +25,93 @@ function extractSummary(md) {
   return m ? m[0] : '';
 }
 
+function parseYmd(ymd) {
+  const m = String(ymd).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function startOfIsoWeek(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return d;
+}
+
+function isoWeekStartFromFilePath(filePath) {
+  const m = path.basename(filePath).match(/^(20\d{2})-W(\d{2})-/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const week = Number(m[2]);
+  const jan4 = new Date(year, 0, 4);
+  const jan4Day = (jan4.getDay() + 6) % 7;
+  const week1Monday = new Date(year, 0, 4 - jan4Day);
+  return addDays(week1Monday, (week - 1) * 7);
+}
+
+function ymdFromDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function extractSection(md, start, end) {
+  const startRe = new RegExp(`^## ${start}、`, 'm');
+  const startMatch = startRe.exec(md);
+  if (!startMatch) return '';
+  const rest = md.slice(startMatch.index);
+  const endRe = new RegExp(`\\n## ${end}、`);
+  const endMatch = endRe.exec(rest);
+  return endMatch ? rest.slice(0, endMatch.index) : rest;
+}
+
+function extractNewsFreshnessBlock(md) {
+  const sections = [
+    extractSection(md, '一', '二'),
+    extractSection(md, '二', '三'),
+    extractSection(md, '三', '四'),
+    extractSection(md, '四', '五'),
+    extractSection(md, '七', '八'),
+    extractSection(md, '八', '九'),
+  ];
+  return sections.join('\n\n');
+}
+
+function oldDateMentionsInNewsSections(md, weekStart) {
+  const block = extractNewsFreshnessBlock(md);
+  if (!block) return [];
+
+  const allowedOldContext = /(不作为本周新闻|不作为本周.*动态|会务日历背景)/;
+  const hits = [];
+
+  const patterns = [
+    /\b(20\d{2}-\d{2}-\d{2})\b/g,
+    /\/(20\d{2})(\d{2})(\d{2})\//g,
+    /\/(20\d{2})(\d{2})\/t\1\2(\d{2})_/g,
+  ];
+
+  for (const re of patterns) {
+    let m;
+    while ((m = re.exec(block))) {
+      const ymd = m.length === 2 ? m[1] : `${m[1]}-${m[2]}-${m[3]}`;
+      const d = parseYmd(ymd);
+      if (!d || d >= weekStart) continue;
+      const context = block.slice(Math.max(0, m.index - 80), Math.min(block.length, m.index + 120));
+      if (allowedOldContext.test(context)) continue;
+      hits.push(`${ymd}: ${context.replace(/\s+/g, ' ').trim()}`);
+    }
+  }
+
+  return [...new Set(hits)];
+}
+
 function isSkeleton(md) {
   const block = extractSectionsOneToTen(md);
   if (!block) return true;
@@ -89,12 +176,22 @@ function validate(md, filePath) {
   const summary = extractSummary(md);
   const summaryBullets = [...summary.matchAll(/^\s*-\s+\S/gm)].length;
   const summaryLinks = (summary.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
+  const { date: currentDate } = currentBeijingWeekContext();
+  const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
+  const oldNewsDates = oldDateMentionsInNewsSections(md, weekStart);
 
   const errors = [];
   if (isSkeleton(md)) errors.push('sections 1-10 still look like the template skeleton');
   if (headings < 10) errors.push(`expected 10 numbered sections, found ${headings}`);
   if (summaryBullets < 3) errors.push(`expected at least 3 summary bullets, found ${summaryBullets}`);
   if (summaryLinks < 3) errors.push(`expected at least 3 summary links, found ${summaryLinks}`);
+  if (oldNewsDates.length) {
+    errors.push(
+      `news sections contain sources dated before this report week (${ymdFromDate(weekStart)}): ${oldNewsDates
+        .slice(0, 5)
+        .join(' | ')}`,
+    );
+  }
 
   if (errors.length) {
     console.error(`[validate] ${filePath} is not publishable:`);
