@@ -29,6 +29,8 @@ npm run weekly:create
 - 仅骨架（不拉 RSS）：`npm run weekly:skeleton`
 - 仅更新当周摘录并 build：`npm run weekly:digest`
 
+公众号/服务号采集：在 `config/weekly-rss.json` 的 `wechatFeeds` 增加可访问 RSS 地址，或配置 `rssHubBase` 后填写 `biz`、`hid`、可选 `cid`。采集仍只写入标题、日期、原文链接；正文维度不变，继续按六类板块归类，没有本周可靠信息就不写。
+
 ## 每周骨架（Windows 计划任务，可选）
 
 ```powershell

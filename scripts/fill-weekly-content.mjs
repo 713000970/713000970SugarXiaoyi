@@ -133,6 +133,19 @@ function formatSearchHintsForPrompt(hints) {
   lines.push('## 信息来源渠道（仅用于检索与核验，不输出“来源平台”字段）');
   lines.push(`- **优先关注**：${(sp.priority || []).join('、')}`);
   lines.push(`- **同时关注**：${(sp.officialAndIndustry || []).join('、')}`);
+  if (Array.isArray(sp.wechatAccounts) && sp.wechatAccounts.length) {
+    lines.push('- **公众号/服务号采集补充**：');
+    for (const account of sp.wechatAccounts) {
+      const name = account.name || account.title || '';
+      if (!name) continue;
+      const type = account.type ? `（${account.type}）` : '';
+      const focus = Array.isArray(account.focus) && account.focus.length ? `：${account.focus.join('、')}` : '';
+      lines.push(`  - ${name}${type}${focus}`);
+    }
+    lines.push(
+      '- 公众号/服务号内容只能作为公开可核验信源；必须有原文链接，且发布时间/更新时间符合本周采编窗口。',
+    );
+  }
   if (sp.note) lines.push(`- ${sp.note}`);
   lines.push('');
   lines.push('正文每条只用一个顶层 bullet，格式固定：');

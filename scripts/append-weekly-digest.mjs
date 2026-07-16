@@ -85,25 +85,68 @@ function loadConfig() {
   };
 }
 
-/** 直连 feeds + 可选 rssHubBase 一键拼接 rsshubRoutes */
+function buildRssHubUrl(base, routePath) {
+  if (!base || !routePath) return '';
+  const pathPart = routePath.startsWith('/') ? routePath : `/${routePath}`;
+  return `${base}${pathPart}`;
+}
+
+function buildWechatRoute(f) {
+  const pathValue = String(f.path || f.route || '').trim();
+  if (pathValue) return pathValue;
+
+  const biz = String(f.biz || '').trim();
+  const hid = String(f.hid || '').trim();
+  const cid = String(f.cid || '').trim();
+  if (!biz || !hid) return '';
+  return `/wechat/mp/homepage/${biz}/${hid}${cid ? `/${cid}` : ''}`;
+}
+
+function appendFeed(target, f, base = '') {
+  if (f?.enabled === false) return true;
+  const url = String(f?.url || '').trim() || buildRssHubUrl(base, buildWechatRoute(f));
+  if (!url) return false;
+  target.push({
+    name: f.name || f.title || url,
+    url,
+  });
+  return true;
+}
+
+/** 直连 feeds + 可选 rssHubBase 一键拼接 rsshubRoutes / wechatFeeds */
 function expandFeedList(j) {
-  const feeds = Array.isArray(j.feeds) ? [...j.feeds] : [];
+  const feeds = [];
   const base = String(j.rssHubBase || '').trim().replace(/\/$/, '');
+
+  if (Array.isArray(j.feeds)) {
+    for (const f of j.feeds) appendFeed(feeds, f);
+  }
+
   const routes = Array.isArray(j.rsshubRoutes) ? j.rsshubRoutes : [];
 
   if (base) {
     for (const r of routes) {
       const routePath = (r.path || r.route || '').trim();
       if (!routePath) continue;
-      const pathPart = routePath.startsWith('/') ? routePath : `/${routePath}`;
       feeds.push({
         name: r.name || routePath,
-        url: `${base}${pathPart}`,
+        url: buildRssHubUrl(base, routePath),
       });
     }
   } else if (routes.length) {
     console.warn(
       '[digest] rssHubBase 为空：已跳过教育部/政府网 RSSHub 源。不会弄可先保持为空；有地址后只填 rssHubBase 一行即可。',
+    );
+  }
+
+  const wechatFeeds = Array.isArray(j.wechatFeeds) ? j.wechatFeeds : [];
+  let skippedWechatFeeds = 0;
+  for (const f of wechatFeeds) {
+    if (!appendFeed(feeds, f, base)) skippedWechatFeeds++;
+  }
+  if (skippedWechatFeeds) {
+    console.warn(
+      `[digest] ${skippedWechatFeeds} wechatFeeds skipped: add url, or set rssHubBase with biz + hid.`,
     );
   }
 
@@ -165,7 +208,9 @@ for (const f of cfg.feeds) {
       const filtered = rawItems.filter((it) => matchesKeyword(it.title, cfg.titleKeywords));
       if (filtered.length >= 2) items = filtered;
     }
+    let addedForFeed = 0;
     for (const it of items) {
+      if (addedForFeed >= cfg.maxItemsPerFeed) break;
       if (seen.has(it.link)) continue;
       seen.add(it.link);
       const ts = itemTimestamp(it.pubDate);
@@ -176,6 +221,7 @@ for (const f of cfg.feeds) {
         if (y < new Date().getFullYear() - 1) continue;
       }
       pool.push({ name, title: it.title, link: it.link, pubDate: it.pubDate, ts });
+      addedForFeed++;
     }
   } catch (e) {
     console.warn(`[digest] skip feed ${name}: ${e.message}`);

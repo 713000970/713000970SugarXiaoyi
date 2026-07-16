@@ -1,5 +1,5 @@
 {
-  "_comment": "【不会弄 RSSHub 时】保持 rssHubBase 为 \"\" 即可，周一仍会用 AI 写正文，只是「附录：自动摘录」条目少一些。\n【社媒来源】B站/微博/小红书/公众号可在 rssHubBase 配置后追加 rsshubRoutes（如 /bilibili/user/video/uid、/weibo/user/uid 等），供附录摘录；AI 正文采编指引见 config/weekly-search-hints.json。\n【直连源】feeds 里写完整 http(s) 地址；教育部等走下方 rsshubRoutes + rssHubBase 自动拼接。",
+  "_comment": "【不会弄 RSSHub 时】保持 rssHubBase 为 \"\" 即可，周一仍会用 AI 写正文，只是「附录：自动摘录」条目少一些。\n【社媒来源】B站/微博/小红书可在 rssHubBase 配置后追加 rsshubRoutes（如 /bilibili/user/video/uid、/weibo/user/uid 等）；公众号/服务号优先填 wechatFeeds。\n【公众号/服务号】wechatFeeds 支持两种方式：1）直接填可访问 RSS 地址 url（RSSHub、wechat2rss、订阅号助手导出等）；2）配置 rssHubBase 后填 biz + hid + 可选 cid，自动拼成 /wechat/mp/homepage/:biz/:hid/:cid。只采标题、日期、原文链接，不转载正文。\n【直连源】feeds 里写完整 http(s) 地址；教育部等走下方 rsshubRoutes + rssHubBase 自动拼接。AI 正文采编指引见 config/weekly-search-hints.json。",
   "rssHubBase": "",
   "feeds": [
     { "name": "人民网-教育", "url": "http://www.people.com.cn/rss/edu.xml" }
@@ -9,6 +9,14 @@
     { "name": "教育部-最新文件", "path": "/gov/moe/newest_file" },
     { "name": "教育部-公告公示", "path": "/gov/moe/notice" },
     { "name": "教育部-教育要闻", "path": "/gov/moe/edu_ministry_news" }
+  ],
+  "wechatFeeds": [
+    {
+      "enabled": false,
+      "name": "示例-公众号/服务号",
+      "url": "https://example.com/wechat-feed.xml",
+      "_note": "拿到真实 RSS 后把 enabled 改为 true；或删除 url，配置 rssHubBase + biz + hid + cid。"
+    }
   ],
   "parseRssMax": 120,
   "maxItemsPerFeed": 8,
