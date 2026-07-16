@@ -154,46 +154,6 @@
     }
     .muted { color: var(--muted); font-size: 0.92rem; }
     .muted-empty { margin-left: 4px; }
-    .toolbar { margin: 8px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip {
-      border: 1px solid var(--line);
-      background: var(--paper);
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 8px 14px;
-      cursor: pointer;
-      font-size: 0.88rem;
-      transition: background 0.2s;
-    }
-    .chip.active {
-      background: rgba(184, 115, 74, 0.18);
-      border-color: rgba(184, 115, 74, 0.45);
-      color: #6b3d24;
-      font-weight: 600;
-    }
-    .archive-head { margin-top: 32px; margin-bottom: 12px; font-size: 1.05rem; color: #4a3728; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 14px; }
-    .card {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 4px 16px rgba(61,46,34,0.05);
-    }
-    .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-    .card h3 { margin: 0; font-size: 1.02rem; color: #3d2a1f; }
-    .card p { color: #5c4a3d; line-height: 1.7; min-height: 40px; font-size: 0.9rem; margin: 10px 0 0; }
-    .card a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
-    .card a:hover { text-decoration: underline; }
-    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .tag {
-      background: rgba(109, 143, 106, 0.12);
-      color: #3d5a3a;
-      border: 1px solid rgba(109, 143, 106, 0.28);
-      border-radius: 999px;
-      font-size: 11px;
-      padding: 3px 10px;
-    }
     .footer { margin-top: 28px; color: var(--muted); font-size: 0.86rem; text-align: center; line-height: 1.6; }
   </style>
 </head>
@@ -201,7 +161,7 @@
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:05 起自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。底部可按标签筛选历史卡片。</p>
+      <p>每周一 10:05 起自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。</p>
     </section>
 
     <p class="section-label">当前展示 · 选择周期</p>
@@ -214,122 +174,6 @@
       <div class="board-meta" id="boardMeta"></div>
       <div class="board-panels" id="boardPanels"></div>
     </div>
-
-    <p class="section-label">历史周期 · 按标签筛选</p>
-    <section class="toolbar" aria-label="内容标签">
-      <button type="button" class="chip active" data-filter="all">全部</button>
-      <button type="button" class="chip" data-filter="policy">政策</button>
-      <button type="button" class="chip" data-filter="expo">展会</button>
-      <button type="button" class="chip" data-filter="platform">平台</button>
-      <button type="button" class="chip" data-filter="k12">K12</button>
-    </section>
-    <h2 class="archive-head">各周期入口</h2>
-    <section class="grid" id="weeklyGrid">
-<article class="card" data-tags="policy platform k12" data-week="2026-W29-周报">
-  <div class="card-head">
-    <h3>2026-W29-周报</h3>
-    <a href="weekly-html/2026-W29-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>高招录取查询与征集志愿</strong>：录取期服务重点从志愿填报转向录取状态查询、征集志愿提醒、退档原因说明和通知书防伪，所有查询入口应指向官方平台。<a href="https://gaokao.chsi.com.cn/">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy expo platform k12" data-week="2026-W28-周报">
-  <div class="card-head">
-    <h3>2026-W28-周报</h3>
-    <a href="weekly-html/2026-W28-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>高考志愿服务进入“录取查询 + 征集志愿 + 退档解释”阶段</strong>：江苏本科院校专业组正式填报已于 <strong>7 月 2 日</strong> 结束，多省从本周起陆续转入提前批、本科批投档录取和征集志愿提醒；志愿类教辅的主线从“怎么填”切换到“怎么看录取状态、如何准备征集、如何解释退档风险”。 · 来源平台：江苏省教育考试院 / 教育部官网 · <a href="https://finance.sina.com.cn/wm/2026-06-11/doc-iniazpqr4015911.shtml">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">展会</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy expo platform k12" data-week="2026-W27-周报">
-  <div class="card-head">
-    <h3>2026-W27-周报</h3>
-    <a href="weekly-html/2026-W27-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>高考志愿填报进入正式填报密集周</strong>：江苏本科院校专业组志愿正式填报为 <strong>6 月 28 日—7 月 2 日</strong>；四川本科提前批志愿已于 <strong>6 月 26 日 12:00</strong> 截止，宁夏本科志愿 <strong>6 月 23—27 日</strong> 窗口结束，多省从本周转入本科批、专项计划、后续批次填报与确认。 · 来源平台：江苏省教育考试院 / 新浪教育 / 高顿教育 · <a href="https://finance.sina.com.cn/wm/2026-06-11/doc-iniazpqr4015911.shtml">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">展会</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy expo platform k12" data-week="2026-W26-周报">
-  <div class="card-head">
-    <h3>2026-W26-周报</h3>
-    <a href="weekly-html/2026-W26-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>第 32 届北京国际图书博览会（BIBF 2026）</strong> 于 <strong>6 月 17–21 日</strong> 在北京国家会议中心举办（<strong>6 月 21 日</strong> 闭幕）；主题 <strong>「以书为媒 交流对话 合作共赢」</strong>，<strong>阿联酋</strong> 担任主宾国；展览面积约 <strong>6 万㎡</strong>，<strong>82 个</strong> 国家和地区 <strong>1700 余家</strong> 展商线下参展，展出 <strong>9 万种</strong> 版权图书、<strong>22 万种</strong> 精品实物图书，举办 <strong>1000 余场</strong> 线上线下活动。 · 来源平台：首都之窗 / 北京日报 · <a href="https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202606/t20260611_4695462.html">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">展会</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W25-周报">
-  <div class="card-head">
-    <h3>2026-W25-周报</h3>
-    <a href="weekly-html/2026-W25-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>江苏省</strong> 6 月 11 日印发 2026 年高考志愿填报通知：<strong>6 月 15–19 日</strong> 开放志愿 <strong>模拟填报</strong>（gk.jseea.cn）；本科院校专业组正式填报 <strong>6 月 28 日—7 月 2 日</strong>；地方专项计划自 2026 年起合并列入国家专项计划序列。 · <a href="https://finance.sina.com.cn/wm/2026-06-11/doc-iniazpqr4015911.shtml">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W24-周报">
-  <div class="card-head">
-    <h3>2026-W24-周报</h3>
-    <a href="weekly-html/2026-W24-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>2026 年全国高考报名人数 1290 万</strong>，6 月 7–8 日平稳举行；教育部高考护航行动升级「阳光志愿」系统，考后严查虚假查分与志愿诈骗。 · <a href="http://www.news.cn/edu/20260605/98f91d1540c8483cbea70c5a4764d8d8/c.html">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W23-周报">
-  <div class="card-head">
-    <h3>2026-W23-周报</h3>
-    <a href="weekly-html/2026-W23-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>教育部</strong> 于 <strong>5 月 22 日</strong> 部署 <strong>2026 年普通高校招生工作</strong>：全国统考 <strong>6 月 7–8 日</strong>；严控大类招生；完善职教高考，严禁「预科班」「跟读」提前揽生。 · <a href="https://app.xinhuanet.com/news/article.html?articleId=ab6edda4bee1e5ce1a0e7a3bcc7c11a9">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W22-周报">
-  <div class="card-head">
-    <h3>2026-W22-周报</h3>
-    <a href="weekly-html/2026-W22-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>2026 年全国学前教育宣传月</strong> 于 <strong>5 月 20 日</strong> 正式启动（至 <strong>6 月 20 日</strong>），主题 <strong>「共同守护数字时代的童年」</strong>；本周进入首轮地方宣教与园所政策解读密集期。 · <a href="https://epaper.gmw.cn/gmrb/html/content/202605/20/content_14331.html">原文</a></p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W21-周报">
-  <div class="card-head">
-    <h3>2026-W21-周报</h3>
-    <a href="weekly-html/2026-W21-周报.html" target="_self">查看详情</a>
-  </div>
-  <p><strong>无锡、青岛、长春等多地</strong> 于本周集中发布或进入 <strong>2026 年义务教育招生</strong> 关键节点（含 <strong>5 月 18 日起</strong> 公办民办小学同步报名、<strong>5 月 22 日</strong> 起初中志愿填报等），「阳光招生」平台化办理与家长咨询高峰叠加。</p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy expo platform k12" data-week="2026-W20-周报">
-  <div class="card-head">
-    <h3>2026-W20-周报</h3>
-    <a href="weekly-html/2026-W20-周报.html" target="_self">查看详情</a>
-  </div>
-  <p>第34届全国图书交易博览会定于 <strong>7月24日至27日</strong> 在杭州举办（主会场杭州国际博览中心），教辅与少儿读物相关企业进入会务筹备与首发策划窗口。</p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">展会</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W19-周报">
-  <div class="card-head">
-    <h3>2026-W19-周报</h3>
-    <a href="weekly-html/2026-W19-周报.html" target="_self">查看详情</a>
-  </div>
-  <p>上海等地公办/民办小学网上报名窗口于本周集中开启（典型窗口含 5 月 7 日至 11 日），义务教育招生进入家长侧“高频办理周”，咨询、材料核验与系统并发压力显著抬升。</p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W18-周报">
-  <div class="card-head">
-    <h3>2026-W18-周报</h3>
-    <a href="weekly-html/2026-W18-周报.html" target="_self">查看详情</a>
-  </div>
-  <p>教育部“阳光招生专项行动（2026年）”执行要求持续传导，普通高中招生治理与关键环节风控成为本周关注重点。</p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-<article class="card" data-tags="policy platform k12" data-week="2026-W17-周报">
-  <div class="card-head">
-    <h3>2026-W17-周报</h3>
-    <a href="weekly-html/2026-W17-周报.html" target="_self">查看详情</a>
-  </div>
-  <p>教育部发布《中国青少年阅读素养框架》教育行业标准（JY/T 0663-2026），阅读能力评价与教学资源建设进入标准化阶段。</p>
-  <div class="tags"><span class="tag">政策</span><span class="tag">平台</span><span class="tag">K12</span></div>
-</article>
-    </section>
 
     <p class="footer">完整排版与外链请以各周「查看详情」页为准；本页板块为节选便于快速浏览。</p>
   </main>
@@ -409,21 +253,6 @@
       renderWeekSelect();
       renderBoard();
 
-      var chips = Array.from(document.querySelectorAll('.toolbar .chip'));
-      var cards = Array.from(document.querySelectorAll('.card'));
-      chips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-          chips.forEach(function (c) {
-            c.classList.remove('active');
-          });
-          chip.classList.add('active');
-          var filter = chip.getAttribute('data-filter');
-          cards.forEach(function (card) {
-            var tags = card.getAttribute('data-tags') || '';
-            card.style.display = filter === 'all' || tags.includes(filter) ? '' : 'none';
-          });
-        });
-      });
     })();
   </script>
 </body>

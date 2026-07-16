@@ -274,24 +274,6 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   const payloadJson = JSON.stringify(payload);
   const payloadHtmlSafe = payloadJson.replace(/</g, '\\u003c');
 
-  const cardsHtml = weeklyItems
-    .map((item) => {
-      const labels = [];
-      if (item.tags.includes('policy')) labels.push('<span class="tag">政策</span>');
-      if (item.tags.includes('expo')) labels.push('<span class="tag">展会</span>');
-      if (item.tags.includes('platform')) labels.push('<span class="tag">平台</span>');
-      if (item.tags.includes('k12')) labels.push('<span class="tag">K12</span>');
-      return `<article class="card" data-tags="${item.tags}" data-week="${item.title}">
-  <div class="card-head">
-    <h3>${item.title}</h3>
-    <a href="${item.href}" target="_self">查看详情</a>
-  </div>
-  <p>${item.summary}</p>
-  <div class="tags">${labels.join('')}</div>
-</article>`;
-    })
-    .join('\n');
-
   const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -448,46 +430,6 @@ function writeCenterDashboard(weeklyItems, outputPath) {
     }
     .muted { color: var(--muted); font-size: 0.92rem; }
     .muted-empty { margin-left: 4px; }
-    .toolbar { margin: 8px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip {
-      border: 1px solid var(--line);
-      background: var(--paper);
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 8px 14px;
-      cursor: pointer;
-      font-size: 0.88rem;
-      transition: background 0.2s;
-    }
-    .chip.active {
-      background: rgba(184, 115, 74, 0.18);
-      border-color: rgba(184, 115, 74, 0.45);
-      color: #6b3d24;
-      font-weight: 600;
-    }
-    .archive-head { margin-top: 32px; margin-bottom: 12px; font-size: 1.05rem; color: #4a3728; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 14px; }
-    .card {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 4px 16px rgba(61,46,34,0.05);
-    }
-    .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-    .card h3 { margin: 0; font-size: 1.02rem; color: #3d2a1f; }
-    .card p { color: #5c4a3d; line-height: 1.7; min-height: 40px; font-size: 0.9rem; margin: 10px 0 0; }
-    .card a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
-    .card a:hover { text-decoration: underline; }
-    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .tag {
-      background: rgba(109, 143, 106, 0.12);
-      color: #3d5a3a;
-      border: 1px solid rgba(109, 143, 106, 0.28);
-      border-radius: 999px;
-      font-size: 11px;
-      padding: 3px 10px;
-    }
     .footer { margin-top: 28px; color: var(--muted); font-size: 0.86rem; text-align: center; line-height: 1.6; }
   </style>
 </head>
@@ -495,7 +437,7 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:05 起自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。底部可按标签筛选历史卡片。</p>
+      <p>每周一 10:05 起自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。</p>
     </section>
 
     <p class="section-label">当前展示 · 选择周期</p>
@@ -508,19 +450,6 @@ function writeCenterDashboard(weeklyItems, outputPath) {
       <div class="board-meta" id="boardMeta"></div>
       <div class="board-panels" id="boardPanels"></div>
     </div>
-
-    <p class="section-label">历史周期 · 按标签筛选</p>
-    <section class="toolbar" aria-label="内容标签">
-      <button type="button" class="chip active" data-filter="all">全部</button>
-      <button type="button" class="chip" data-filter="policy">政策</button>
-      <button type="button" class="chip" data-filter="expo">展会</button>
-      <button type="button" class="chip" data-filter="platform">平台</button>
-      <button type="button" class="chip" data-filter="k12">K12</button>
-    </section>
-    <h2 class="archive-head">各周期入口</h2>
-    <section class="grid" id="weeklyGrid">
-${cardsHtml}
-    </section>
 
     <p class="footer">完整排版与外链请以各周「查看详情」页为准；本页板块为节选便于快速浏览。</p>
   </main>
@@ -600,21 +529,6 @@ ${cardsHtml}
       renderWeekSelect();
       renderBoard();
 
-      var chips = Array.from(document.querySelectorAll('.toolbar .chip'));
-      var cards = Array.from(document.querySelectorAll('.card'));
-      chips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-          chips.forEach(function (c) {
-            c.classList.remove('active');
-          });
-          chip.classList.add('active');
-          var filter = chip.getAttribute('data-filter');
-          cards.forEach(function (card) {
-            var tags = card.getAttribute('data-tags') || '';
-            card.style.display = filter === 'all' || tags.includes(filter) ? '' : 'none';
-          });
-        });
-      });
     })();
   </script>
 </body>
