@@ -216,7 +216,8 @@ function validate(md, filePath) {
   const malformedItems = items.filter((line) => !/^- \*\*[^*]+\*\*：.+\]\(https?:\/\/(?!\.\.\.)[^)]+\)\s*$/.test(line));
   const { date: currentDate } = currentBeijingWeekContext();
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
-  const oldNewsDates = oldDateMentionsInNewsSections(md, weekStart);
+  const currentWeekStart = startOfIsoWeek(currentDate);
+  const oldNewsDates = weekStart >= currentWeekStart ? oldDateMentionsInNewsSections(md, weekStart) : [];
   const policyInterpretation = extractPolicyInterpretationSection(md);
   const policyInterpretationItems = policyInterpretation ? topLevelItems(policyInterpretation) : [];
   const malformedPolicyInterpretationItems = policyInterpretationItems.filter(
