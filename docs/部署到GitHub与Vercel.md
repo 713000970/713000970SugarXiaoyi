@@ -46,9 +46,9 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 无需打开 Cursor；只要改 Markdown 并推送即可。
 
-## 5. 每周一 10:05 起自动上线（GitHub Actions）
+## 5. 每周一 08:55 自动上线（GitHub Actions）
 
-仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:05 / 10:20 / 10:35 运行，12:05 / 14:05 备用（UTC 周一 02:05 / 02:20 / 02:35 / 04:05 / 06:05），依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ **AI 撰写第一～十章**（需 Secret，见下）→ 校验非空框架 → `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 08:55 运行，09:10 备用（UTC 周一 00:55 / 01:10），依次执行：生成上一完整周周报骨架 → 按 `config/weekly-rss.json` 拉取上一周一到周日信息写入「附录：自动摘录」→ **AI 按七板块撰写正文**（需 Secret，见下；无 Secret 时使用兜底正文）→ 校验非空框架 → `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
 
 ### 每周一自动「满篇干货」（AI 填稿）
 
@@ -69,7 +69,7 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 ## 6. Windows 计划任务（可选）
 
-本机 **`scripts/register_weekly_task.ps1`** 每周一 10:00 调用与云端相同的 **`create-weekly-report.mjs`**（通过 `create_weekly_report.ps1`）。**仅本机执行不会更新线上**，仍需 `git push` 才会触发 Vercel；线上自动发布以第 5 节 GitHub Actions 为准。
+本机 **`scripts/register_weekly_task.ps1`** 每周一 08:55 调用与云端相同的 **`create-weekly-report.mjs`**（通过 `create_weekly_report.ps1`）。**仅本机执行不会更新线上**，仍需 `git push` 才会触发 Vercel；线上自动发布以第 5 节 GitHub Actions 为准。
 
 ## 7. 故障排除（访问域名出现 `404 NOT_FOUND`）
 

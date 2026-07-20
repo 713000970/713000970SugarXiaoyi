@@ -1,5 +1,5 @@
 /**
- * 按 config/weekly-rss.json 拉取 RSS 标题与链接，写入当周 weekly/*.md 的「附录：自动摘录」（AUTO_DIGEST 标记之间），并执行 build。
+ * 按 config/weekly-rss.json 拉取 RSS 标题与链接，写入目标周 weekly/*.md 的「附录：自动摘录」（AUTO_DIGEST 标记之间），并执行 build。
  * 供 GitHub Actions 与本机 `npm run weekly:digest` 使用。
  */
 import fs from 'fs';
@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { applyDigestSection } from './weekly-digest-utils.mjs';
-import { currentBeijingWeekContext, pad2 } from './weekly-date-utils.mjs';
+import { addDays, currentBeijingDate, pad2, weeklyTargetContext } from './weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -141,7 +141,7 @@ async function fetchText(url, ms) {
   }
 }
 
-function loadConfig() {
+function loadConfig(target) {
   const p = path.join(ROOT, 'config', 'weekly-rss.json');
   if (!fs.existsSync(p)) {
     return {
@@ -157,7 +157,7 @@ function loadConfig() {
   const j = JSON.parse(raw);
   return {
     feeds: expandFeedList(j),
-    htmlPages: expandHtmlPageList(j),
+    htmlPages: expandHtmlPageList(j, target),
     maxItemsPerFeed: Number(j.maxItemsPerFeed) || 8,
     maxItemsTotal: Number(j.maxItemsTotal) || 18,
     titleKeywords: Array.isArray(j.titleKeywords) ? j.titleKeywords : [],
@@ -166,7 +166,7 @@ function loadConfig() {
   };
 }
 
-function expandHtmlPageList(j) {
+function expandHtmlPageList(j, target) {
   if (!Array.isArray(j.htmlPages)) return [];
   const pages = [];
   const seen = new Set();
@@ -182,10 +182,8 @@ function expandHtmlPageList(j) {
     const template = String(p?.urlTemplate || p?.template || '').trim();
     if (template) {
       const days = Math.max(1, Number(p.days || p.lookbackDays || 7));
-      const today = new Date();
       for (let i = 0; i < days; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
+        const d = addDays(target.weekEndDate, -i);
         addPage(`${p.name || p.title || '滚动页面'}-${formatDateShort(d)}`, formatTemplateUrl(template, d));
       }
       continue;
@@ -278,6 +276,12 @@ function isFutureTimestamp(ts) {
   return ts > Date.now() + 86400000;
 }
 
+function isWithinTargetWeek(ts, target) {
+  if (!ts) return false;
+  const beijingDate = currentBeijingDate(new Date(ts));
+  return beijingDate >= target.weekStartDate && beijingDate <= target.weekEndDate;
+}
+
 function matchesKeyword(title, keywords) {
   if (!keywords.length) return true;
   return keywords.some((k) => k && title.includes(k));
@@ -302,7 +306,7 @@ function isRelevantDigestTitle(title) {
 function formatDateShort(pubDate) {
   const ts = itemTimestamp(pubDate);
   if (!ts) return '日期不详';
-  const d = new Date(ts);
+  const d = currentBeijingDate(new Date(ts));
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
@@ -317,14 +321,15 @@ function sanitizeTitle(t) {
     .slice(0, 220);
 }
 
-const { weekCode } = currentBeijingWeekContext();
+const target = weeklyTargetContext();
+const { weekCode } = target;
 const weeklyPath = path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 
 if (!fs.existsSync(weeklyPath)) {
   throw new Error(`Missing weekly file: ${weeklyPath}（请先运行 create-weekly-report）`);
 }
 
-const cfg = loadConfig();
+const cfg = loadConfig(target);
 const pool = [];
 const seen = new Set();
 
@@ -344,10 +349,11 @@ for (const f of cfg.feeds) {
       if (seen.has(it.link)) continue;
       seen.add(it.link);
       const ts = itemTimestamp(it.pubDate);
+      if (!ts) continue;
+      if (!isWithinTargetWeek(ts, target)) continue;
+      if (isFutureTimestamp(ts)) continue;
       if (cfg.maxAgeDays > 0) {
-        if (!ts) continue;
-        if (isFutureTimestamp(ts)) continue;
-        if (ageDays(ts) > cfg.maxAgeDays) continue;
+        if (cfg.maxAgeDays > 0 && ageDays(ts) > cfg.maxAgeDays + 7) continue;
         const y = new Date(ts).getFullYear();
         if (y < new Date().getFullYear() - 1) continue;
       }
@@ -376,10 +382,11 @@ for (const p of cfg.htmlPages) {
       if (seen.has(it.link)) continue;
       seen.add(it.link);
       const ts = itemTimestamp(it.pubDate);
+      if (!ts) continue;
+      if (!isWithinTargetWeek(ts, target)) continue;
+      if (isFutureTimestamp(ts)) continue;
       if (cfg.maxAgeDays > 0) {
-        if (!ts) continue;
-        if (isFutureTimestamp(ts)) continue;
-        if (ageDays(ts) > cfg.maxAgeDays) continue;
+        if (cfg.maxAgeDays > 0 && ageDays(ts) > cfg.maxAgeDays + 7) continue;
         const y = new Date(ts).getFullYear();
         if (y < new Date().getFullYear() - 1) continue;
       }

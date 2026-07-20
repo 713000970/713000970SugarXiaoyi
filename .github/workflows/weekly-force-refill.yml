@@ -1,7 +1,7 @@
-# 一键强制按七板块重写当周有内容的板块，无需找下拉选项。
+# 一键强制按七板块重写目标周（默认上一完整周）有内容的板块，无需找下拉选项。
 # 用法：Actions → 左侧点本工作流 → Run workflow
 
-name: Force AI refill (当前周报)
+name: Force AI refill (目标周报)
 
 on:
   workflow_dispatch:

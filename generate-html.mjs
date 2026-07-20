@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { stripEmptyDigestSection } from './scripts/weekly-digest-utils.mjs';
+import { weeklyTargetContext } from './scripts/weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname);
@@ -442,7 +443,7 @@ function writeCenterDashboard(weeklyItems, outputPath) {
   <main class="container">
     <section class="hero">
       <h1>教辅行业与K12动态周报中心</h1>
-      <p>每周一 10:05 起自动更新。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。</p>
+      <p>每周一 08:55 自动发布上一完整周动态。用下方<strong>下拉菜单</strong>切换周报周期；当前周期按<strong>板块</strong>速览节选。</p>
     </section>
 
     <p class="section-label">当前展示 · 选择周期</p>
@@ -576,6 +577,16 @@ function listWeeklyMarkdownPaths(rootDir) {
   return paths;
 }
 
+function weekRankFromTitle(title) {
+  const m = String(title || '').match(/^(20\d{2})-W(\d{2})/);
+  if (!m) return 0;
+  return Number(m[1]) * 100 + Number(m[2]);
+}
+
+function isVisibleWeeklyTitle(title) {
+  return weekRankFromTitle(title) <= weekRankFromTitle(weeklyTargetContext().weekCode);
+}
+
 function main() {
   const centerMdPath = path.join(ROOT, '周报中心.md');
   const weeklyMdDir = path.join(ROOT, 'weekly');
@@ -606,13 +617,15 @@ function main() {
     writeHtmlPage(base, body, outPath);
     console.log(`Generated: ${outPath}`);
 
-    weeklyItems.push({
-      title: base,
-      summary: convertInlineMarkdown(getWeeklySummary(md)),
-      tags: getWeeklyTags(md),
-      href: `weekly-html/${htmlName}`,
-      sections: parseWeeklySections(md),
-    });
+    if (isVisibleWeeklyTitle(base)) {
+      weeklyItems.push({
+        title: base,
+        summary: convertInlineMarkdown(getWeeklySummary(md)),
+        tags: getWeeklyTags(md),
+        href: `weekly-html/${htmlName}`,
+        sections: parseWeeklySections(md),
+      });
+    }
   }
 
   weeklyItems.sort((a, b) => (a.title < b.title ? 1 : a.title > b.title ? -1 : 0));

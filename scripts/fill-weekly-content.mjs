@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { currentBeijingWeekContext, pad2 } from './weekly-date-utils.mjs';
+import { weeklyTargetContext, pad2 } from './weekly-date-utils.mjs';
 import { removeDigestSection } from './weekly-digest-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -291,7 +291,7 @@ function findPreviousWeeklyPath(weekCode) {
   return fs.existsSync(p) ? p : null;
 }
 
-function buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt, searchHintsBlock, eventsBlock }) {
+function buildPrompt({ weekCode, dateCode, weekStartCode, weekEndCode, digest, example, prevExcerpt, searchHintsBlock, eventsBlock }) {
   return `你是一位教辅行业与 K12 教育政策分析师。请撰写 **${weekCode}** 周报的 Markdown 正文（只写有真实信息的业务板块，不要写附录）。
 
 ## 输出要求
@@ -300,7 +300,7 @@ function buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt, searchH
 3. **可用章节与顺序固定**：一、K12教育政策 → 二、K12教辅政策 → 三、出版数智化 → 四、局社合作 → 五、科技合作 → 六、评教辅行业 → 七、政策解读。没有可核验信息的章节直接省略，不能写空章节。
 4. 每条资讯只允许一个顶层 bullet，格式固定：\`- **标题**：一句话说明这条信息为什么重要。[原文](url)\`。
 5. 事实须结合「本周 RSS 摘录」与采编关键词组织内容；不得编造文件号、日期、机构、社媒账号。
-6. **本周新闻硬规则**：各板块只允许采用本周采编窗口内发布/更新的消息，或持续有效的官方入口。早于本周的旧官宣、旧预备会、旧活动报道不得写入。
+6. **本周新闻硬规则**：各板块只允许采用采编窗口（${weekStartCode} 至 ${weekEndCode}）内发布/更新的消息，或持续有效的官方入口。早于采编窗口的旧官宣、旧预备会、旧活动报道不得写入。
 7. **第六板块硬规则**：「六、评教辅行业」只能引用新闻评论、行业媒体评论、专家评论、专栏文章或署名评论文章；不得把官方入口、普通政策、会务预告或平台页面改写成我方行业判断。
 8. **第七板块硬规则**：「七、政策解读」只能引用网站、公众号/服务号、行业媒体或专家发布的政策解读、问答、图解、一图读懂、专家解读类文章；不得把政策原文、普通新闻、官方入口改写成解读。
 9. **没有就不写**：不得输出“本周公开稿未见”“未检索到”“建议继续跟进”“不作为本周新闻”等占位、解释或建议。
@@ -309,6 +309,7 @@ function buildPrompt({ weekCode, dateCode, digest, example, prevExcerpt, searchH
 ${searchHintsBlock || ''}${eventsBlock || ''}## 本周信息
 - 周次：${weekCode}
 - 更新日期：${dateCode}（周一）
+- 采编窗口：${weekStartCode} 至 ${weekEndCode}
 
 ## 本周 RSS 摘录（标题+链接，请据此检索要点，勿虚构链接）
 ${digest || '（暂无 RSS 条目：不得用旧官宣硬凑本周新闻；没有可靠信息的板块直接省略。）'}
@@ -419,16 +420,10 @@ function parseDigestItems(digest) {
   return items;
 }
 
-function startOfFallbackWindow(refDate) {
-  const d = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
-  d.setDate(d.getDate() - 7);
-  return d;
-}
-
-function inFallbackWindow(item, refDate) {
+function inFallbackWindow(item, target) {
   const d = parseYmd(item.date);
   if (!d) return false;
-  return d >= startOfFallbackWindow(refDate);
+  return d >= target.weekStartDate && d <= target.weekEndDate;
 }
 
 function classifyDigestItem(item) {
@@ -550,9 +545,9 @@ function renderGroupedSections(grouped) {
   return blocks.join('\n').trimEnd() + '\n';
 }
 
-function buildFallbackMarkdown(md, refDate) {
+function buildFallbackMarkdown(md, target) {
   const grouped = new Map();
-  const digestItems = parseDigestItems(extractDigestBullets(md)).filter((item) => inFallbackWindow(item, refDate));
+  const digestItems = parseDigestItems(extractDigestBullets(md)).filter((item) => inFallbackWindow(item, target));
 
   for (const item of digestItems) {
     const section = classifyDigestItem(item);
@@ -579,7 +574,8 @@ function writeBusinessSections(weeklyPath, md, generated) {
 }
 
 const cfg = loadFillConfig();
-const { date: today, weekCode, dateCode } = currentBeijingWeekContext();
+const target = weeklyTargetContext();
+const { targetDate: targetWeekStart, weekCode, dateCode, weekStartCode, weekEndCode } = target;
 const weeklyPath = path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 
 if (!fs.existsSync(weeklyPath)) {
@@ -618,7 +614,7 @@ if (!hasKey) {
     'Add Secrets in GitHub → Settings → Secrets and variables → Actions ' +
     '(see config/weekly-fill.json: DeepSeek 可用 OPENAI_API_KEY + OPENAI_BASE_URL + OPENAI_MODEL).';
   console.warn(msg);
-  const generated = buildFallbackMarkdown(md, today);
+  const generated = buildFallbackMarkdown(md, target);
   writeBusinessSections(weeklyPath, md, generated);
   console.log(`[fill] Wrote fallback business sections to ${weeklyPath}`);
   process.exit(0);
@@ -637,11 +633,13 @@ if (prevPath) {
 const prompt = buildPrompt({
   weekCode,
   dateCode,
+  weekStartCode,
+  weekEndCode,
   digest,
   example,
   prevExcerpt,
   searchHintsBlock: formatSearchHintsForPrompt(loadSearchHints(cfg)),
-  eventsBlock: formatEventsForPrompt(loadEventsCalendar(cfg), today),
+  eventsBlock: formatEventsForPrompt(loadEventsCalendar(cfg), targetWeekStart),
 });
 console.log(`[fill] Calling LLM for ${weekCode} (digest lines: ${digest.split('\n').filter(Boolean).length})...`);
 
@@ -651,7 +649,7 @@ try {
 } catch (e) {
   if (process.env.CI !== 'true') throw e;
   console.warn(`[fill] LLM failed, using deterministic fallback content: ${e.message}`);
-  generated = buildFallbackMarkdown(md, today);
+  generated = buildFallbackMarkdown(md, target);
 }
 writeBusinessSections(weeklyPath, md, generated);
 console.log(`[fill] Wrote concise business sections to ${weeklyPath}`);

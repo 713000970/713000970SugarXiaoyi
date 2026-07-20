@@ -1,12 +1,12 @@
 /**
- * 从模板生成当周周报骨架、更新「周报索引」、运行 npm run build。
+ * 从模板生成目标周周报骨架、更新「周报索引」、运行 npm run build。
  * 与 PowerShell 版 create_weekly_report.ps1 行为对齐，供 CI（Ubuntu）与本机共用。
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
-import { currentBeijingWeekContext } from './weekly-date-utils.mjs';
+import { weeklyTargetContext } from './weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -19,7 +19,7 @@ if (!fs.existsSync(centerPath)) throw new Error(`Missing file: ${centerPath}`);
 if (!fs.existsSync(templatePath)) throw new Error(`Missing file: ${templatePath}`);
 if (!fs.existsSync(weeklyDir)) fs.mkdirSync(weeklyDir, { recursive: true });
 
-const { weekCode, dateCode } = currentBeijingWeekContext();
+const { weekCode, dateCode } = weeklyTargetContext();
 
 const weeklyFileName = `${weekCode}-周报.md`;
 const weeklyFilePath = path.join(ROOT, 'weekly', weeklyFileName);

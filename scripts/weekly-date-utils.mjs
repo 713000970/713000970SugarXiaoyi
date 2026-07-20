@@ -34,15 +34,53 @@ export function formatYmd(date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
-export function currentBeijingWeekContext(now = new Date()) {
-  const date = currentBeijingDate(now);
-  const { year, week } = getIsoWeekInfo(date);
+export function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+export function startOfIsoWeek(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return d;
+}
+
+function weekContextForDate(weekDate, publishDate) {
+  const weekStartDate = startOfIsoWeek(weekDate);
+  const weekEndDate = addDays(weekStartDate, 6);
+  const { year, week } = getIsoWeekInfo(weekStartDate);
   const weekCode = `${year}-W${pad2(week)}`;
   return {
-    date,
+    date: publishDate,
+    targetDate: weekStartDate,
+    publishDate,
     year,
     week,
     weekCode,
-    dateCode: formatYmd(date),
+    weekStartDate,
+    weekEndDate,
+    weekStartCode: formatYmd(weekStartDate),
+    weekEndCode: formatYmd(weekEndDate),
+    dateCode: formatYmd(publishDate),
   };
+}
+
+export function currentBeijingWeekContext(now = new Date()) {
+  const date = currentBeijingDate(now);
+  return weekContextForDate(date, date);
+}
+
+export function previousBeijingWeekContext(now = new Date()) {
+  const publishDate = currentBeijingDate(now);
+  const currentWeekStart = startOfIsoWeek(publishDate);
+  const previousWeekStart = addDays(currentWeekStart, -7);
+  return weekContextForDate(previousWeekStart, publishDate);
+}
+
+export function weeklyTargetContext(now = new Date()) {
+  const mode = String(process.env.WEEKLY_TARGET || 'previous').trim().toLowerCase();
+  if (mode === 'current' || mode === 'this') return currentBeijingWeekContext(now);
+  return previousBeijingWeekContext(now);
 }

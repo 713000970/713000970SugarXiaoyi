@@ -1,17 +1,17 @@
 /**
- * Fail CI if the current weekly report is still the template skeleton.
+ * Fail CI if the target weekly report is still the template skeleton.
  * This prevents GitHub Actions from publishing an empty "framework" page.
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { currentBeijingWeekContext } from './weekly-date-utils.mjs';
+import { currentBeijingWeekContext, weeklyTargetContext } from './weekly-date-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 function currentWeeklyPath() {
-  const { weekCode } = currentBeijingWeekContext();
+  const { weekCode } = weeklyTargetContext();
   return path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 }
 
@@ -131,8 +131,7 @@ function oldDateMentionsInNewsSections(md, weekStart) {
 
 function freshnessFloorForWeek(weekStart, currentWeekStart) {
   const floor = new Date(weekStart);
-  // 周一 10 点生成当周动态时，采编窗口应覆盖刚过去的 7 天。
-  // 这仍会拦截 4 月旧官宣硬凑 7 月周报的情况。
+  // 自动发布目标为上一完整周；当前/未来周手动生成时仍允许滚动 7 天窗口。
   if (weekStart >= currentWeekStart) floor.setDate(floor.getDate() - 7);
   return floor;
 }
@@ -226,7 +225,10 @@ function validate(md, filePath) {
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
   const currentWeekStart = startOfIsoWeek(currentDate);
   const freshnessFloor = freshnessFloorForWeek(weekStart, currentWeekStart);
-  const oldNewsDates = weekStart >= currentWeekStart ? oldDateMentionsInNewsSections(md, freshnessFloor) : [];
+  const targetWeekStart = weeklyTargetContext().weekStartDate;
+  const isTargetWeek = weekStart.getTime() === targetWeekStart.getTime();
+  const oldNewsDates =
+    weekStart >= currentWeekStart || isTargetWeek ? oldDateMentionsInNewsSections(md, freshnessFloor) : [];
   const policyInterpretation = extractPolicyInterpretationSection(md);
   const policyInterpretationItems = policyInterpretation ? topLevelItems(policyInterpretation) : [];
   const malformedPolicyInterpretationItems = policyInterpretationItems.filter(

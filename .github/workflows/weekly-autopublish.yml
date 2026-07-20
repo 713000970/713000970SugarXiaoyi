@@ -1,4 +1,4 @@
-# 北京时间每周一 10:05 起：骨架 → 官网/RSS 摘录 → AI 按七板块填写（无 Secret 时兜底）→ validate → build → push → Vercel
+# 北京时间每周一 08:55：生成上一完整周周报 → 官网/RSS 摘录 → AI 按七板块填写（无 Secret 时兜底）→ validate → build → push → Vercel
 # 依赖：Settings → Actions → Workflow permissions → Read and write permissions
 # 满篇干货：Secrets 配 ANTHROPIC_API_KEY，或 OPENAI_API_KEY（国内可用 DeepSeek，见 config/weekly-fill.json 说明）；无密钥时仍会产出兜底正文，避免周报缺页。
 
@@ -6,13 +6,13 @@ name: Weekly skeleton and publish
 
 on:
   schedule:
-    # GitHub cron 使用 UTC。避开每小时 00 分高负载；北京时间周一 10:05 / 10:20 / 10:35（主）+ 12:05 / 14:05（备用）
-    - cron: "5,20,35 2 * * 1"
-    - cron: "5 4,6 * * 1"
+    # GitHub cron 使用 UTC：北京时间周一 08:55（主）+ 09:10（备用）
+    - cron: "55 0 * * 1"
+    - cron: "10 1 * * 1"
   workflow_dispatch:
     inputs:
       force_fill:
-        description: 勾选=强制按七板块重写有内容的板块（覆盖当周已有正文）
+        description: 勾选=强制按七板块重写有内容的板块（覆盖目标周已有正文）
         required: false
         default: false
         type: boolean
