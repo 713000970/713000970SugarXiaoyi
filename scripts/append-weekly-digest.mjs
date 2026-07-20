@@ -42,6 +42,48 @@ function parseRssItems(xml, max) {
   return items;
 }
 
+function decodeHtmlEntities(s) {
+  return String(s || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function normalizeHtmlDate(raw) {
+  const m = String(raw || '').match(/(20\d{2})[-年\/.](\d{1,2})[-月\/.](\d{1,2})/);
+  if (!m) return '';
+  return `${m[1]}-${pad2(Number(m[2]))}-${pad2(Number(m[3]))}`;
+}
+
+function parseHtmlItems(html, pageUrl, max) {
+  const cleaned = String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+  const items = [];
+  const re = /<a\b[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
+  let m;
+  while ((m = re.exec(cleaned)) && items.length < max) {
+    const href = decodeHtmlEntities(m[2]).trim();
+    if (!href || /^javascript:|^mailto:|^#/.test(href)) continue;
+    let link;
+    try {
+      link = new URL(href, pageUrl).href;
+    } catch {
+      continue;
+    }
+    const title = stripCDATA(decodeHtmlEntities(m[3])).replace(/\s+/g, ' ').trim();
+    if (!title || title.length < 4) continue;
+    const context = cleaned.slice(Math.max(0, m.index - 140), Math.min(cleaned.length, re.lastIndex + 220));
+    const pubDate = normalizeHtmlDate(context) || normalizeHtmlDate(link);
+    if (!pubDate) continue;
+    items.push({ title, link, pubDate });
+  }
+  return items;
+}
+
 async function fetchText(url, ms) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
@@ -77,12 +119,23 @@ function loadConfig() {
   const j = JSON.parse(raw);
   return {
     feeds: expandFeedList(j),
+    htmlPages: expandHtmlPageList(j),
     maxItemsPerFeed: Number(j.maxItemsPerFeed) || 8,
     maxItemsTotal: Number(j.maxItemsTotal) || 18,
     titleKeywords: Array.isArray(j.titleKeywords) ? j.titleKeywords : [],
     maxAgeDays: Number.isFinite(Number(j.maxAgeDays)) ? Number(j.maxAgeDays) : 21,
     parseRssMax: Number(j.parseRssMax) || 120,
   };
+}
+
+function expandHtmlPageList(j) {
+  if (!Array.isArray(j.htmlPages)) return [];
+  return j.htmlPages
+    .filter((p) => p?.enabled !== false && String(p?.url || '').trim())
+    .map((p) => ({
+      name: p.name || p.title || p.url,
+      url: String(p.url).trim(),
+    }));
 }
 
 function buildRssHubUrl(base, routePath) {
@@ -168,6 +221,21 @@ function matchesKeyword(title, keywords) {
   return keywords.some((k) => k && title.includes(k));
 }
 
+function isRelevantDigestTitle(title) {
+  const text = String(title || '');
+  const strong =
+    /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|教材教辅|招生|高考|中考|智慧教育|数字教育|国家智慧教育平台|青少年|未成年人|课后服务|课堂|课程|暑期|校园餐|校服|教师培养|国门学校|出版|图书|书博|BIBF|数字教材|AI教育|题库|政策解读|一图读懂|问答|图解/.test(
+      text,
+    );
+  if (!strong) return false;
+
+  const higherOnly = /高校|大学|研究生|职业教育|高职|成人教育|就业|党委书记|校长/.test(text);
+  const explicitK12 = /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|高考|中考|国门学校|国家智慧教育平台|青少年|未成年人|课后服务|校园餐|校服/.test(
+    text,
+  );
+  return !higherOnly || explicitK12;
+}
+
 function formatDateShort(pubDate) {
   const ts = itemTimestamp(pubDate);
   if (!ts) return '日期不详';
@@ -204,10 +272,8 @@ for (const f of cfg.feeds) {
     const xml = await fetchText(url, 25000);
     const rawItems = parseRssItems(xml, cfg.parseRssMax);
     let items = rawItems;
-    if (cfg.titleKeywords.length) {
-      const filtered = rawItems.filter((it) => matchesKeyword(it.title, cfg.titleKeywords));
-      if (filtered.length >= 2) items = filtered;
-    }
+    if (cfg.titleKeywords.length) items = rawItems.filter((it) => matchesKeyword(it.title, cfg.titleKeywords));
+    items = items.filter((it) => isRelevantDigestTitle(it.title));
     let addedForFeed = 0;
     for (const it of items) {
       if (addedForFeed >= cfg.maxItemsPerFeed) break;
@@ -225,6 +291,37 @@ for (const f of cfg.feeds) {
     }
   } catch (e) {
     console.warn(`[digest] skip feed ${name}: ${e.message}`);
+  }
+  await new Promise((r) => setTimeout(r, 400));
+}
+
+for (const p of cfg.htmlPages) {
+  const url = p?.url?.trim();
+  const name = p?.name || url;
+  if (!url || !/^https?:\/\//i.test(url)) continue;
+  try {
+    const html = await fetchText(url, 25000);
+    const rawItems = parseHtmlItems(html, url, cfg.parseRssMax);
+    let items = rawItems;
+    if (cfg.titleKeywords.length) items = rawItems.filter((it) => matchesKeyword(it.title, cfg.titleKeywords));
+    items = items.filter((it) => isRelevantDigestTitle(it.title));
+    let addedForPage = 0;
+    for (const it of items) {
+      if (addedForPage >= cfg.maxItemsPerFeed) break;
+      if (seen.has(it.link)) continue;
+      seen.add(it.link);
+      const ts = itemTimestamp(it.pubDate);
+      if (cfg.maxAgeDays > 0) {
+        if (!ts) continue;
+        if (ageDays(ts) > cfg.maxAgeDays) continue;
+        const y = new Date(ts).getFullYear();
+        if (y < new Date().getFullYear() - 1) continue;
+      }
+      pool.push({ name, title: it.title, link: it.link, pubDate: it.pubDate, ts });
+      addedForPage++;
+    }
+  } catch (e) {
+    console.warn(`[digest] skip html page ${name}: ${e.message}`);
   }
   await new Promise((r) => setTimeout(r, 400));
 }

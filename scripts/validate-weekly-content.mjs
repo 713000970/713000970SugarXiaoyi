@@ -129,6 +129,14 @@ function oldDateMentionsInNewsSections(md, weekStart) {
   return [...new Set(hits)];
 }
 
+function freshnessFloorForWeek(weekStart, currentWeekStart) {
+  const floor = new Date(weekStart);
+  // 周一 10 点生成当周动态时，采编窗口应覆盖刚过去的 7 天。
+  // 这仍会拦截 4 月旧官宣硬凑 7 月周报的情况。
+  if (weekStart >= currentWeekStart) floor.setDate(floor.getDate() - 7);
+  return floor;
+}
+
 function isSkeleton(md) {
   const block = extractBusinessSections(md);
   if (!block) return true;
@@ -217,7 +225,8 @@ function validate(md, filePath) {
   const { date: currentDate } = currentBeijingWeekContext();
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
   const currentWeekStart = startOfIsoWeek(currentDate);
-  const oldNewsDates = weekStart >= currentWeekStart ? oldDateMentionsInNewsSections(md, weekStart) : [];
+  const freshnessFloor = freshnessFloorForWeek(weekStart, currentWeekStart);
+  const oldNewsDates = weekStart >= currentWeekStart ? oldDateMentionsInNewsSections(md, freshnessFloor) : [];
   const policyInterpretation = extractPolicyInterpretationSection(md);
   const policyInterpretationItems = policyInterpretation ? topLevelItems(policyInterpretation) : [];
   const malformedPolicyInterpretationItems = policyInterpretationItems.filter(
@@ -241,7 +250,7 @@ function validate(md, filePath) {
   if (linkCount < items.length) errors.push(`expected one source link per item, found ${linkCount} links for ${items.length} items`);
   if (oldNewsDates.length) {
     errors.push(
-      `news sections contain sources dated before this report week (${ymdFromDate(weekStart)}): ${oldNewsDates
+      `news sections contain sources older than the rolling collection window (${ymdFromDate(freshnessFloor)}): ${oldNewsDates
         .slice(0, 5)
         .join(' | ')}`,
     );

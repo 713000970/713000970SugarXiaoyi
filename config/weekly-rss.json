@@ -4,6 +4,13 @@
   "feeds": [
     { "name": "人民网-教育", "url": "http://www.people.com.cn/rss/edu.xml" }
   ],
+  "htmlPages": [
+    { "name": "教育部-教育要闻", "url": "https://www.moe.gov.cn/jyb_xwfb/gzdt_gzdt/" },
+    { "name": "教育部-最新文件", "url": "https://www.moe.gov.cn/srcsite/" },
+    { "name": "教育部-政策解读", "url": "https://www.moe.gov.cn/jyb_xwfb/s271/" },
+    { "name": "教育部-基础教育", "url": "https://www.moe.gov.cn/s78/A06/" },
+    { "name": "青少年普法网", "url": "https://qspfw.moe.gov.cn/" }
+  ],
   "rsshubRoutes": [
     { "name": "中国政府网-最新政策", "path": "/gov/zhengce/zuixin" },
     { "name": "教育部-最新文件", "path": "/gov/moe/newest_file" },

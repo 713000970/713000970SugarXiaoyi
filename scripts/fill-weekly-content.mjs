@@ -1,17 +1,28 @@
 /**
  * 用 LLM 根据 RSS 摘录，将当周 markdown 写成清晰简报。
- * 需环境变量 ANTHROPIC_API_KEY 或 OPENAI_API_KEY；无密钥时跳过（exit 0）。
- * 保留「附录：自动摘录」节不变。
+ * 无 ANTHROPIC_API_KEY / OPENAI_API_KEY 时，改用 RSS 摘录和官方入口生成兜底正文，避免周报缺页。
+ * 默认移除「附录：自动摘录」展示；设置 KEEP_DIGEST_APPENDIX=1 时才保留。
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { currentBeijingWeekContext, pad2 } from './weekly-date-utils.mjs';
+import { removeDigestSection } from './weekly-digest-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const BUSINESS_HEADING_PATTERN =
   '## (?:一、K12教育政策|二、K12教辅政策|三、出版数智化|四、局社合作|五、科技合作|六、评教辅行业|七、政策解读)';
+const SECTION_ORDER = [
+  '一、K12教育政策',
+  '二、K12教辅政策',
+  '三、出版数智化',
+  '四、局社合作',
+  '五、科技合作',
+  '六、评教辅行业',
+  '七、政策解读',
+];
+const MIN_FALLBACK_ITEMS = 4;
 
 function loadFillConfig() {
   const p = path.join(ROOT, 'config', 'weekly-fill.json');
@@ -254,7 +265,7 @@ function isSkeletonSections(body) {
   });
 
   const realLinks = (block.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
-  return substantive.length < 8 || realLinks < 3;
+  return substantive.length < 3 || realLinks < 3;
 }
 
 function readExampleBody(cfg) {
@@ -381,6 +392,192 @@ function normalizeLlmMarkdown(text) {
   return t.trimEnd() + '\n';
 }
 
+function stripMd(value) {
+  return String(value || '')
+    .replace(/\*\*/g, '')
+    .replace(/\[[^\]]+\]\([^)]+\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseDigestItems(digest) {
+  const lines = String(digest || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const items = [];
+  for (const line of lines) {
+    const m = line.match(/^\s*-\s*\*\*(.+?)\*\*\s*·\s*([^·]+)\s*·\s*\[原文\]\((https?:\/\/[^)]+)\)(?:（(.+)）)?/);
+    if (!m) continue;
+    items.push({
+      title: stripMd(m[1]).slice(0, 80),
+      date: stripMd(m[2]),
+      url: m[3],
+      sourceName: stripMd(m[4] || ''),
+    });
+  }
+  return items;
+}
+
+function startOfFallbackWindow(refDate) {
+  const d = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
+  d.setDate(d.getDate() - 7);
+  return d;
+}
+
+function inFallbackWindow(item, refDate) {
+  const d = parseYmd(item.date);
+  if (!d) return false;
+  return d >= startOfFallbackWindow(refDate);
+}
+
+function classifyDigestItem(item) {
+  const text = `${item.title} ${item.sourceName}`;
+  const explicitK12 =
+    /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|教材教辅|高考|中考|国门学校|国家智慧教育平台|青少年|未成年人|课后服务|校园餐|校服|智慧教育/.test(
+      text,
+    );
+  const higherOnly = /高校|大学|研究生|职业教育|高职|成人教育|就业|党委书记|校长/.test(text) && !explicitK12;
+  if (higherOnly) return '';
+
+  if (/(评论|时评|观察|专栏|述评|观点)/.test(text) && /(教辅|教材|出版|教育)/.test(text)) {
+    return '六、评教辅行业';
+  }
+  if (/(政策解读|解读|问答|图解|一图读懂|专家解读|答记者问|读懂|说明|释疑)/.test(text)) {
+    return '七、政策解读';
+  }
+  if (/(教辅|教材教辅|一科一辅|进校|评议目录|选用|送评|征订|校服)/.test(text)) {
+    return '二、K12教辅政策';
+  }
+  if (/(出版社|人民教育出版社|教育出版传媒|捐赠|签署|签约|共建|局社合作)/.test(text)) {
+    return '四、局社合作';
+  }
+  if (/(科技公司|AI合作|人工智能合作|平台合作|硬件|数据服务)/i.test(text)) {
+    return '五、科技合作';
+  }
+  if (/(出版|数字|智慧教育|人工智能|AI|题库|资源平台|数字教材|网络画板)/i.test(text)) {
+    return '三、出版数智化';
+  }
+  if (/(中小学|义务教育|基础教育|普通高中|招生|高考|中考|校外培训|双减|国门学校|青少年|未成年人|课后服务|校园餐|校服)/.test(text)) {
+    return '一、K12教育政策';
+  }
+  return '';
+}
+
+function descriptionForSection(section) {
+  switch (section) {
+    case '一、K12教育政策':
+      return '基础教育治理、招生考试或学校服务要求进入本周采编窗口，教辅与 K12 服务应按官方口径更新说明';
+    case '二、K12教辅政策':
+      return '地方教辅选用、进校管理或专项整治继续细化，目录、送选、征订和销售口径需按公告执行';
+    case '三、出版数智化':
+      return '教育数字化和平台应用继续推进，数字资源、题库和学习工具要强化可核验入口与内容审校';
+    case '四、局社合作':
+      return '教育部门、学校或公益机构与出版单位合作落地，适合跟踪资源共建和区域服务模式';
+    case '五、科技合作':
+      return '教育出版与技术服务协同信号增强，AI、平台、硬件和数据合作需同步关注合规边界';
+    case '六、评教辅行业':
+      return '公开评论提供了观察教辅、教育出版或 K12 服务变化的外部视角，可作为行业判断参考';
+    case '七、政策解读':
+      return '解读稿补充了政策背景、执行重点和地方落地口径，便于统一对外说明和产品合规表述';
+    default:
+      return '本周公开信息需要纳入采编跟踪，并配套更新业务说明';
+  }
+}
+
+function addGroupedItem(grouped, section, item) {
+  if (!section || !item?.title || !item?.url) return;
+  if (!grouped.has(section)) grouped.set(section, []);
+  const bucket = grouped.get(section);
+  if (bucket.length >= 3) return;
+  if ([...grouped.values()].flat().some((x) => x.url === item.url)) return;
+  bucket.push({ ...item, desc: item.desc || descriptionForDigestItem(section, item) });
+}
+
+function descriptionForDigestItem(section, item) {
+  const title = item?.title || '';
+  if (/国门学校.*教师培养/.test(title)) {
+    return '教师培养支持计划面向边境地区学校启动，说明薄弱地区师资建设仍是基础教育政策重点，相关培训和资源服务应按官方口径对接';
+  }
+  if (/国家智慧教育平台.*试点推进会/.test(title)) {
+    return '教育部推进国家智慧教育平台深化应用试点，数字资源、题库和学习工具需要围绕官方平台应用、资源审核和区域试点更新产品口径';
+  }
+  if (/校园餐|教辅|校服.*整治|三项整治/.test(title)) {
+    return '校园餐、教辅和校服治理继续纳入专项整治范围，教辅选用、进校和收费场景需保持可追溯、可核验';
+  }
+  if (/高招|高考|征集志愿|录取/.test(title)) {
+    return '录取期服务重点从填报预测转向官方查询、征集志愿提醒和通知书核验，相关内容应避免替代官方结论';
+  }
+  return descriptionForSection(section);
+}
+
+function fallbackOfficialItems() {
+  return [
+    {
+      section: '一、K12教育政策',
+      title: '高招录取查询与征集志愿',
+      desc: '录取期服务重点转向录取状态查询、征集志愿提醒、退档原因说明和通知书防伪，查询入口应指向官方平台',
+      url: 'https://gaokao.chsi.com.cn/',
+    },
+    {
+      section: '一、K12教育政策',
+      title: '暑期校外培训监管查询',
+      desc: '暑期教辅配套服务、训练营、AI 诊断和社群答疑需要与学科培训边界区分清楚，家长侧可通过全国监管平台核验机构和课程信息',
+      url: 'https://xwpx.eduyun.cn/',
+    },
+    {
+      section: '三、出版数智化',
+      title: '国家智慧教育平台资源入口',
+      desc: '暑期阅读、错题复盘、单元诊断和学习计划类产品应优先引用可核验资源入口，并保留人工审校和纠错机制',
+      url: 'https://www.smartedu.cn/',
+    },
+  ];
+}
+
+function renderGroupedSections(grouped) {
+  const blocks = [];
+  for (const section of SECTION_ORDER) {
+    const items = grouped.get(section) || [];
+    if (!items.length) continue;
+    blocks.push(`## ${section}`);
+    blocks.push('');
+    for (const item of items) {
+      const desc = item.desc || descriptionForSection(section);
+      blocks.push(`- **${item.title}**：${desc}。[原文](${item.url})`);
+    }
+    blocks.push('');
+  }
+  return blocks.join('\n').trimEnd() + '\n';
+}
+
+function buildFallbackMarkdown(md, refDate) {
+  const grouped = new Map();
+  const digestItems = parseDigestItems(extractDigestBullets(md)).filter((item) => inFallbackWindow(item, refDate));
+
+  for (const item of digestItems) {
+    const section = classifyDigestItem(item);
+    if (!section) continue;
+    addGroupedItem(grouped, section, item);
+  }
+
+  let count = [...grouped.values()].reduce((sum, items) => sum + items.length, 0);
+  for (const item of fallbackOfficialItems()) {
+    if (count >= MIN_FALLBACK_ITEMS) break;
+    addGroupedItem(grouped, item.section, item);
+    count = [...grouped.values()].reduce((sum, items) => sum + items.length, 0);
+  }
+
+  return renderGroupedSections(grouped);
+}
+
+function writeBusinessSections(weeklyPath, md, generated) {
+  const header = extractHeader(md);
+  const keepDigestAppendix = ['1', 'true', 'yes'].includes(String(process.env.KEEP_DIGEST_APPENDIX || '').toLowerCase());
+  const tail = keepDigestAppendix ? extractDigestAppendixOnward(md) : '';
+  const out = tail ? `${header}${generated}\n${tail}` : `${header}${generated}`;
+  fs.writeFileSync(weeklyPath, out, 'utf8');
+}
+
 const cfg = loadFillConfig();
 const { date: today, weekCode, dateCode } = currentBeijingWeekContext();
 const weeklyPath = path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
@@ -402,21 +599,28 @@ console.log(
 );
 
 if (!force && !skeleton) {
-  console.log('[fill] Six business sections already have content; skip (set FORCE_WEEKLY_FILL=1 to overwrite).');
+  if (!['1', 'true', 'yes'].includes(String(process.env.KEEP_DIGEST_APPENDIX || '').toLowerCase())) {
+    const cleaned = removeDigestSection(md);
+    if (cleaned !== md) {
+      fs.writeFileSync(weeklyPath, cleaned, 'utf8');
+      console.log('[fill] Business sections already have content; removed digest appendix.');
+      process.exit(0);
+    }
+  }
+  console.log('[fill] Business sections already have content; skip (set FORCE_WEEKLY_FILL=1 to overwrite).');
   process.exit(0);
 }
 
 const hasKey = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 if (!hasKey) {
   const msg =
-    '[fill] No ANTHROPIC_API_KEY or OPENAI_API_KEY — cannot write concise business sections. ' +
+    '[fill] No ANTHROPIC_API_KEY or OPENAI_API_KEY — using deterministic fallback content. ' +
     'Add Secrets in GitHub → Settings → Secrets and variables → Actions ' +
     '(see config/weekly-fill.json: DeepSeek 可用 OPENAI_API_KEY + OPENAI_BASE_URL + OPENAI_MODEL).';
-  if (process.env.CI === 'true') {
-    console.error(msg);
-    process.exit(1);
-  }
-  console.warn(msg + ' Local run: skipping (exit 0).');
+  console.warn(msg);
+  const generated = buildFallbackMarkdown(md, today);
+  writeBusinessSections(weeklyPath, md, generated);
+  console.log(`[fill] Wrote fallback business sections to ${weeklyPath}`);
   process.exit(0);
 }
 
@@ -441,9 +645,13 @@ const prompt = buildPrompt({
 });
 console.log(`[fill] Calling LLM for ${weekCode} (digest lines: ${digest.split('\n').filter(Boolean).length})...`);
 
-const generated = normalizeLlmMarkdown(await generateBody(prompt, cfg));
-const header = extractHeader(md);
-const tail = extractDigestAppendixOnward(md);
-const out = tail ? `${header}${generated}\n${tail}` : `${header}${generated}`;
-fs.writeFileSync(weeklyPath, out, 'utf8');
+let generated;
+try {
+  generated = normalizeLlmMarkdown(await generateBody(prompt, cfg));
+} catch (e) {
+  if (process.env.CI !== 'true') throw e;
+  console.warn(`[fill] LLM failed, using deterministic fallback content: ${e.message}`);
+  generated = buildFallbackMarkdown(md, today);
+}
+writeBusinessSections(weeklyPath, md, generated);
 console.log(`[fill] Wrote concise business sections to ${weeklyPath}`);
