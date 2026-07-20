@@ -53,9 +53,32 @@ function decodeHtmlEntities(s) {
 }
 
 function normalizeHtmlDate(raw) {
-  const m = String(raw || '').match(/(20\d{2})[-年\/.](\d{1,2})[-月\/.](\d{1,2})/);
+  const text = String(raw || '');
+  const compactMoe = text.match(/\/(20\d{2})(\d{2})\/t\1\2(\d{2})_/);
+  if (compactMoe) return `${compactMoe[1]}-${compactMoe[2]}-${compactMoe[3]}`;
+  const paperM = text.match(/\/(20\d{2})-(\d{2})\/(\d{2})\//);
+  if (paperM) return `${paperM[1]}-${paperM[2]}-${paperM[3]}`;
+  const compact = text.match(/\b(20\d{2})(\d{2})(\d{2})\b/);
+  if (compact) return `${compact[1]}-${compact[2]}-${compact[3]}`;
+  const m = text.match(/(20\d{2})[-年\/.](\d{1,2})[-月\/.](\d{1,2})/);
   if (!m) return '';
   return `${m[1]}-${pad2(Number(m[2]))}-${pad2(Number(m[3]))}`;
+}
+
+function ymdParts(date) {
+  return {
+    yyyy: String(date.getFullYear()),
+    yy: String(date.getFullYear()).slice(-2),
+    mm: pad2(date.getMonth() + 1),
+    m: String(date.getMonth() + 1),
+    dd: pad2(date.getDate()),
+    d: String(date.getDate()),
+  };
+}
+
+function formatTemplateUrl(template, date) {
+  const parts = ymdParts(date);
+  return String(template || '').replace(/\{(yyyy|yy|mm|m|dd|d)\}/g, (_, key) => parts[key] || '');
 }
 
 function parseHtmlItems(html, pageUrl, max) {
@@ -76,8 +99,11 @@ function parseHtmlItems(html, pageUrl, max) {
     }
     const title = stripCDATA(decodeHtmlEntities(m[3])).replace(/\s+/g, ' ').trim();
     if (!title || title.length < 4) continue;
+    if (/^(上一版|下一版|返回首页|广告刊例|上一期|下一期|首页|确定|登录|English)$/i.test(title)) continue;
+    if (/^(政策解读|通知公告|政策文件|信息公开|要闻信息|业务动态|地方工作|结果公示|新闻中心|新品发布|产品与服务|服务与支持|关于我们)$/.test(title)) continue;
+    if (/^第\d{2}版\s*[:：]/.test(title)) continue;
     const context = cleaned.slice(Math.max(0, m.index - 140), Math.min(cleaned.length, re.lastIndex + 220));
-    const pubDate = normalizeHtmlDate(context) || normalizeHtmlDate(link);
+    const pubDate = normalizeHtmlDate(link) || normalizeHtmlDate(context);
     if (!pubDate) continue;
     items.push({ title, link, pubDate });
   }
@@ -97,7 +123,19 @@ async function fetchText(url, ms) {
       },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    const head = new TextDecoder('utf-8', { fatal: false }).decode(bytes.slice(0, 4096));
+    const contentType = res.headers.get('content-type') || '';
+    const charset =
+      (contentType.match(/charset=([\w-]+)/i)?.[1] || head.match(/charset=["']?([\w-]+)/i)?.[1] || 'utf-8')
+        .toLowerCase()
+        .replace(/^gb2312$/, 'gbk');
+    try {
+      return new TextDecoder(charset, { fatal: false }).decode(bytes);
+    } catch {
+      return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
   } finally {
     clearTimeout(t);
   }
@@ -130,12 +168,31 @@ function loadConfig() {
 
 function expandHtmlPageList(j) {
   if (!Array.isArray(j.htmlPages)) return [];
-  return j.htmlPages
-    .filter((p) => p?.enabled !== false && String(p?.url || '').trim())
-    .map((p) => ({
-      name: p.name || p.title || p.url,
-      url: String(p.url).trim(),
-    }));
+  const pages = [];
+  const seen = new Set();
+  const addPage = (name, url) => {
+    const cleanUrl = String(url || '').trim();
+    if (!cleanUrl || seen.has(cleanUrl)) return;
+    seen.add(cleanUrl);
+    pages.push({ name: name || cleanUrl, url: cleanUrl });
+  };
+
+  for (const p of j.htmlPages) {
+    if (p?.enabled === false) continue;
+    const template = String(p?.urlTemplate || p?.template || '').trim();
+    if (template) {
+      const days = Math.max(1, Number(p.days || p.lookbackDays || 7));
+      const today = new Date();
+      for (let i = 0; i < days; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        addPage(`${p.name || p.title || '滚动页面'}-${formatDateShort(d)}`, formatTemplateUrl(template, d));
+      }
+      continue;
+    }
+    addPage(p.name || p.title || p.url, p.url);
+  }
+  return pages;
 }
 
 function buildRssHubUrl(base, routePath) {
@@ -216,6 +273,11 @@ function ageDays(ts) {
   return (Date.now() - ts) / 86400000;
 }
 
+function isFutureTimestamp(ts) {
+  if (!ts) return false;
+  return ts > Date.now() + 86400000;
+}
+
 function matchesKeyword(title, keywords) {
   if (!keywords.length) return true;
   return keywords.some((k) => k && title.includes(k));
@@ -223,14 +285,15 @@ function matchesKeyword(title, keywords) {
 
 function isRelevantDigestTitle(title) {
   const text = String(title || '');
+  if (/^(政策解读|通知公告|政策文件|信息公开|要闻信息|业务动态|地方工作|结果公示|新闻中心|新品发布)$/.test(text)) return false;
   const strong =
-    /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|教材教辅|招生|高考|中考|智慧教育|数字教育|国家智慧教育平台|青少年|未成年人|课后服务|课堂|课程|暑期|校园餐|校服|教师培养|国门学校|出版|图书|书博|BIBF|数字教材|AI教育|题库|政策解读|一图读懂|问答|图解/.test(
+    /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|教材教辅|教辅材料评议|评议推荐|评议公告|遴选推荐|遴选结果|推荐目录|公告目录|一科一辅|进校园|凡进必审|送评|征订|同步练习|考试辅导|暑假作业|学习辅助|招生|高考|中考|智慧教育|数字教育|国家智慧教育平台|青少年|未成年人|课后服务|课堂|课程|暑期|校园餐|校服|教师培养|国门学校|出版|图书|书博|BIBF|数字教材|AI教育|题库|学习机|学练机|智能教辅|教育出版|出版传媒|出版集团|出版社|人教社|人民教育出版社|新华文轩|北师大出版|东方激光|新华书店|发行集团|政策解读|一图读懂|答记者问|问答|图解/.test(
       text,
     );
   if (!strong) return false;
 
   const higherOnly = /高校|大学|研究生|职业教育|高职|成人教育|就业|党委书记|校长/.test(text);
-  const explicitK12 = /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|高考|中考|国门学校|国家智慧教育平台|青少年|未成年人|课后服务|校园餐|校服/.test(
+  const explicitK12 = /中小学|义务教育|基础教育|普通高中|高中|小学|初中|校外培训|双减|教辅|教材|高考|中考|国门学校|国家智慧教育平台|青少年|未成年人|课后服务|校园餐|校服|学生读本|统编教材/.test(
     text,
   );
   return !higherOnly || explicitK12;
@@ -248,6 +311,7 @@ function sanitizeTitle(t) {
     .replace(/\*\*/g, '')
     .replace(/\r?\n/g, ' ')
     .replace(/\s+/g, ' ')
+    .replace(/\s*20\d{2}-\d{2}-\d{2}\s*东方激光教育文化有限公司\s*$/g, '')
     .replace(/^\s*[-*]\s*/, '')
     .trim()
     .slice(0, 220);
@@ -282,6 +346,7 @@ for (const f of cfg.feeds) {
       const ts = itemTimestamp(it.pubDate);
       if (cfg.maxAgeDays > 0) {
         if (!ts) continue;
+        if (isFutureTimestamp(ts)) continue;
         if (ageDays(ts) > cfg.maxAgeDays) continue;
         const y = new Date(ts).getFullYear();
         if (y < new Date().getFullYear() - 1) continue;
@@ -313,6 +378,7 @@ for (const p of cfg.htmlPages) {
       const ts = itemTimestamp(it.pubDate);
       if (cfg.maxAgeDays > 0) {
         if (!ts) continue;
+        if (isFutureTimestamp(ts)) continue;
         if (ageDays(ts) > cfg.maxAgeDays) continue;
         const y = new Date(ts).getFullYear();
         if (y < new Date().getFullYear() - 1) continue;
