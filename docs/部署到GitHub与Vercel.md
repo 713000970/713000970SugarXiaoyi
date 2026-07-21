@@ -57,7 +57,7 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
    - 或 `OPENAI_API_KEY`（可选 `OPENAI_BASE_URL` 兼容网关）
 2. 范例文风来自 `config/weekly-fill.json` 的 `exampleWeeklyPath`（默认 `weekly/2026-W21-周报.md`），可换成你满意的一期。
 3. 本地联调：`npm run weekly:create`（= 骨架 + RSS + AI 填稿 + build）；仅重跑 AI：`npm run weekly:fill`（已有人工正文时默认跳过，强制覆盖设 `FORCE_WEEKLY_FILL=1`）。
-4. **质量说明**：成稿质量取决于 RSS 是否拉得到近 21 天条目；教育部/RSSHub 在 CI 上常失败时，建议在 `config/weekly-rss.json` 配置自建 RSSHub 或稳定源。公众号/服务号请填入 `wechatFeeds`（直接 RSS URL，或 `rssHubBase + biz + hid + cid`），只采标题、日期、原文链接；正文按七个固定板块归类，其中「七、政策解读」专收网站、公众号/服务号等公开来源对教育教辅政策的解读文章，没有可靠本周信息就省略。重要发布前建议人工审阅第一章与政策条款。
+4. **质量说明**：成稿质量取决于 RSS 是否拉得到近 21 天条目；教育部/RSSHub 在 CI 上常失败时，建议在 `config/weekly-rss.json` 配置自建 RSSHub 或稳定源。公众号/服务号请填入 `wechatFeeds`（直接 RSS URL，或 `rssHubBase + biz + hid + cid`），只采标题、日期、原文链接；正文按七个行业维度归类，重点覆盖 K12 政策、教辅政策、出版社/教辅公司数智化、局社采购合作、科技合作、行业评论和政策解读，没有可靠本周信息就省略。重要发布前建议人工审阅政策、采购和评论类条目。
 
 1. 打开 GitHub 仓库 **Settings → Actions → General**。
 2. 在 **Workflow permissions** 中选择 **Read and write permissions**，保存。

@@ -5,20 +5,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { normalizeWeeklySectionHeadings, sectionNames } from './weekly-sections.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const weeklyDir = path.join(ROOT, 'weekly');
 
-const ORDERED = [
-  '## 一、K12教育政策',
-  '## 二、K12教辅政策',
-  '## 三、出版数智化',
-  '## 四、局社合作',
-  '## 五、科技合作',
-  '## 六、评教辅行业',
-  '## 七、政策解读',
-];
+const ORDERED = sectionNames().map((title) => `## ${title}`);
 
 function checkMarkdown(md, filePath) {
   let last = -1;
@@ -36,8 +29,10 @@ function checkMarkdown(md, filePath) {
 const files = fs.readdirSync(weeklyDir).filter((f) => f.endsWith('-周报.md'));
 for (const f of files) {
   const p = path.join(weeklyDir, f);
-  const md = fs.readFileSync(p, 'utf8');
-  if (!md.includes('## 一、K12教育政策')) continue;
+  const raw = fs.readFileSync(p, 'utf8');
+  const md = normalizeWeeklySectionHeadings(raw);
+  if (md !== raw) fs.writeFileSync(p, md, 'utf8');
+  if (!md.includes(ORDERED[0])) continue;
   checkMarkdown(md, p);
   console.log(`Checked business section order: ${p}`);
 }

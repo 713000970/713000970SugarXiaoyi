@@ -1,5 +1,5 @@
 {
-  "_comment": "行业会务/书展清单，按年维护。fill-weekly-content.mjs 按当周周一筛选：已结束 7 天内 + 未来 60 天内的事件注入 AI prompt，避免漏报 BIBF 等大展。",
+  "_comment": "行业会务/书展清单，按年维护。fill-weekly-content.mjs 按目标周周一筛选：已结束 7 天内 + 未来 60 天内的事件注入 AI prompt，避免漏报 BIBF 等大展。",
   "lookbackDays": 7,
   "lookaheadDays": 60,
   "events": [

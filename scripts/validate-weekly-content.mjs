@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { currentBeijingWeekContext, weeklyTargetContext } from './weekly-date-utils.mjs';
+import { businessHeadingPatternSource, normalizeSectionTitle, sectionHeading, sectionNames, WEEKLY_SECTIONS } from './weekly-sections.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -15,15 +16,8 @@ function currentWeeklyPath() {
   return path.join(ROOT, 'weekly', `${weekCode}-周报.md`);
 }
 
-const REQUIRED_SECTION_TITLES = [
-  '一、K12教育政策',
-  '二、K12教辅政策',
-  '三、出版数智化',
-  '四、局社合作',
-  '五、科技合作',
-  '六、评教辅行业',
-  '七、政策解读',
-];
+const BUSINESS_HEADING_PATTERN = businessHeadingPatternSource();
+const REQUIRED_SECTION_TITLES = sectionNames();
 const ALLOWED_SECTION_TITLES = new Set(REQUIRED_SECTION_TITLES);
 const FORBIDDEN_PLACEHOLDER_RE =
   /本周公开稿未见|未检索到|未见新的|暂无|待核验|建议继续跟进|不作为本周新闻|不作为本周.*动态|采编口径说明|会务日历背景/;
@@ -31,9 +25,7 @@ const FORBIDDEN_FIELD_RE =
   /^\s*-\s*(来源平台|来源|要点|影响判断|可跟进点|发布单位|发布时间|原文链接|核心条款|执行影响|出版社\/教辅公司|教育局\/学校\/事业单位|科技公司\/平台方|合作内容与期限|合作方向|本周动态|机会|风险|下周动作|公司\/机构|出版侧|数智化侧)：/m;
 
 function extractBusinessSections(md) {
-  const m = md.match(
-    /## (?:一、K12教育政策|二、K12教辅政策|三、出版数智化|四、局社合作|五、科技合作|六、评教辅行业|七、政策解读)[\s\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)/,
-  );
+  const m = md.match(new RegExp(`${BUSINESS_HEADING_PATTERN}[\\s\\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)`));
   return m ? m[0].trim() : '';
 }
 
@@ -201,7 +193,7 @@ function isSkeleton(md) {
 }
 
 function sectionTitles(business) {
-  return [...business.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim());
+  return [...business.matchAll(/^##\s+(.+)$/gm)].map((m) => normalizeSectionTitle(m[1]));
 }
 
 function topLevelItems(business) {
@@ -234,6 +226,11 @@ function validate(md, filePath) {
   const malformedPolicyInterpretationItems = policyInterpretationItems.filter(
     (line) => !/(政策解读|解读|问答|图解|一图读懂|专家解读|答记者问|读懂|说明|释疑)/.test(line),
   );
+  const commentary = extractSection(md, '六', '七');
+  const commentaryItems = commentary ? topLevelItems(commentary) : [];
+  const malformedCommentaryItems = commentaryItems.filter(
+    (line) => !/(评论|时评|观察|专栏|述评|观点|专家|行业媒体|文章|认为|指出)/.test(line),
+  );
 
   const errors = [];
   if (isSkeleton(md)) errors.push('business sections still look like the template skeleton');
@@ -260,6 +257,13 @@ function validate(md, filePath) {
   if (malformedPolicyInterpretationItems.length) {
     errors.push(
       `policy interpretation items must be actual interpretation/Q&A/infographic/expert-explanation articles: ${malformedPolicyInterpretationItems
+        .slice(0, 3)
+        .join(' | ')}`,
+    );
+  }
+  if (malformedCommentaryItems.length) {
+    errors.push(
+      `industry commentary items must be actual commentaries/expert/column articles: ${malformedCommentaryItems
         .slice(0, 3)
         .join(' | ')}`,
     );

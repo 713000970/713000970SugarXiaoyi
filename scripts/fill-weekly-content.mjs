@@ -1,5 +1,5 @@
 /**
- * 用 LLM 根据 RSS 摘录，将当周 markdown 写成清晰简报。
+ * 用 LLM 根据 RSS 摘录，将目标周 markdown 写成清晰简报。
  * 无 ANTHROPIC_API_KEY / OPENAI_API_KEY 时，改用 RSS 摘录和官方入口生成兜底正文，避免周报缺页。
  * 默认移除「附录：自动摘录」展示；设置 KEEP_DIGEST_APPENDIX=1 时才保留。
  */
@@ -8,20 +8,18 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { weeklyTargetContext, pad2 } from './weekly-date-utils.mjs';
 import { removeDigestSection } from './weekly-digest-utils.mjs';
+import {
+  businessHeadingPatternSource,
+  normalizeSectionTitle,
+  sectionHeading,
+  sectionNames,
+  WEEKLY_SECTIONS,
+} from './weekly-sections.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const BUSINESS_HEADING_PATTERN =
-  '## (?:一、K12教育政策|二、K12教辅政策|三、出版数智化|四、局社合作|五、科技合作|六、评教辅行业|七、政策解读)';
-const SECTION_ORDER = [
-  '一、K12教育政策',
-  '二、K12教辅政策',
-  '三、出版数智化',
-  '四、局社合作',
-  '五、科技合作',
-  '六、评教辅行业',
-  '七、政策解读',
-];
+const BUSINESS_HEADING_PATTERN = businessHeadingPatternSource();
+const SECTION_ORDER = sectionNames();
 const MIN_FALLBACK_ITEMS = 4;
 
 function loadFillConfig() {
@@ -125,13 +123,13 @@ function formatSearchHintsForPrompt(hints) {
     '## 采编方向（七个可用分类，没信息的分类不要输出）',
     '',
     '各「板块」写入对应周报章节，**不得新增或改名章节；没有可核验信息的板块直接省略**：',
-    '- **一 K12教育政策**：教育部、省市教育局、考试招生、双减、课后服务、校外培训治理等 K12 政策动态。',
-    '- **二 K12教辅政策**：教材教辅目录、评议选用、进校合规、出版监管、广告/收费/AI 配套合规。',
-    '- **三 出版数智化**：出版社/教辅公司新品线、数字教材、AI 教辅、题库、资源平台、业务升级。',
-    '- **四 局社合作**：教育局/学校/事业单位与出版社/教辅公司的合作、共建、公益服务、区域试点。',
-    '- **五 科技合作**：出版社/教辅公司与 AI/题库/平台/硬件/数据服务商合作。',
-    '- **六 评教辅行业**：只收新闻评论、行业媒体评论、专家/专栏文章中对教育教辅行业的公开观点；没有评论原文就省略。',
-    '- **七 政策解读**：只收各大网站、公众号/服务号等公开发布的教育教辅政策解读、问答、图解、一图读懂或专家解读文章；没有解读原文就省略。',
+    '- **一 K12教育政策全国盘点**：教育部、省市教育局、考试招生、暑期托管、双减、课后服务、校外培训治理等 K12 政策动态。',
+    '- **二 K12教辅政策全国盘点**：教材教辅目录、评议选用、送评、征订、进校合规、出版监管、广告/收费/AI 配套合规。',
+    '- **三 出版社/教辅公司出版及数智化最新动态**：出版社/教辅公司新品线、数字教材、AI 教辅、题库、资源平台、业务升级。',
+    '- **四 出版社/教辅公司与各地教育部门深度合作**：教育局/学校/事业单位采购、招标、中标、资源共建、公益捐赠、区域试点。',
+    '- **五 出版社/教辅公司与科技公司深度合作**：出版社/教辅公司与 AI、题库、学习机、平台、硬件、数据服务商合作。',
+    '- **六 新闻评论/专家专栏评教辅行业**：只收新闻评论、行业媒体评论、专家/专栏文章中对教育教辅行业的公开观点；没有评论原文就省略。',
+    '- **七 教育教辅政策解读文章**：只收各大网站、公众号/服务号等公开发布的教育教辅政策解读、问答、图解、一图读懂或专家解读文章；没有解读原文就省略。',
     '',
   ];
   for (const t of hints.topics) {
@@ -297,14 +295,16 @@ function buildPrompt({ weekCode, dateCode, weekStartCode, weekEndCode, digest, e
 ## 输出要求
 1. 语言：简体中文。
 2. 只输出业务板块，不要输出一级标题、「更新时间」行或附录。
-3. **可用章节与顺序固定**：一、K12教育政策 → 二、K12教辅政策 → 三、出版数智化 → 四、局社合作 → 五、科技合作 → 六、评教辅行业 → 七、政策解读。没有可核验信息的章节直接省略，不能写空章节。
+3. **可用章节与顺序固定**：${SECTION_ORDER.join(' → ')}。没有可核验信息的章节直接省略，不能写空章节。
 4. 每条资讯只允许一个顶层 bullet，格式固定：\`- **标题**：一句话说明这条信息为什么重要。[原文](url)\`。
-5. 事实须结合「本周 RSS 摘录」与采编关键词组织内容；不得编造文件号、日期、机构、社媒账号。
+5. 事实须结合「本周 RSS 摘录」与采编关键词组织内容；优先覆盖政策原文/评议目录/采购招标/中标公示/出版社产品/技术合作等高价值线索；不得编造文件号、日期、机构、社媒账号。
 6. **本周新闻硬规则**：各板块只允许采用采编窗口（${weekStartCode} 至 ${weekEndCode}）内发布/更新的消息，或持续有效的官方入口。早于采编窗口的旧官宣、旧预备会、旧活动报道不得写入。
-7. **第六板块硬规则**：「六、评教辅行业」只能引用新闻评论、行业媒体评论、专家评论、专栏文章或署名评论文章；不得把官方入口、普通政策、会务预告或平台页面改写成我方行业判断。
-8. **第七板块硬规则**：「七、政策解读」只能引用网站、公众号/服务号、行业媒体或专家发布的政策解读、问答、图解、一图读懂、专家解读类文章；不得把政策原文、普通新闻、官方入口改写成解读。
-9. **没有就不写**：不得输出“本周公开稿未见”“未检索到”“建议继续跟进”“不作为本周新闻”等占位、解释或建议。
-10. 正文禁止出现二级 bullet，禁止输出“来源平台、来源、要点、影响判断、可跟进点、发布单位、发布时间、合作方、合作内容、风险、机会、下周动作”等字段。
+7. **第二板块边界**：只写教辅材料目录、评议、选用、送评、征订、进校、封面标识、价格、出版资质、印制发行合规等政策/监管信息；普通 K12 政策不要放进第二板块。
+8. **第四板块边界**：教育局、学校或事业单位的教材教辅、图书、数字资源采购、招标、中标、合作共建和公益项目写入第四板块；只写本周发布的公告或公示。
+9. **第六板块硬规则**：「六、新闻评论/专家专栏评教辅行业」只能引用新闻评论、行业媒体评论、专家评论、专栏文章或署名评论文章；不得把官方入口、普通政策、会务预告或平台页面改写成我方行业判断。
+10. **第七板块硬规则**：「七、教育教辅政策解读文章」只能引用网站、公众号/服务号、行业媒体或专家发布的政策解读、问答、图解、一图读懂、专家解读类文章；不得把政策原文、普通新闻、官方入口改写成解读。
+11. **没有就不写**：不得输出“本周公开稿未见”“未检索到”“建议继续跟进”“不作为本周新闻”等占位、解释或建议。
+12. 正文禁止出现二级 bullet，禁止输出“来源平台、来源、要点、影响判断、可跟进点、发布单位、发布时间、合作方、合作内容、风险、机会、下周动作”等字段。
 
 ${searchHintsBlock || ''}${eventsBlock || ''}## 本周信息
 - 周次：${weekCode}
@@ -436,48 +436,53 @@ function classifyDigestItem(item) {
   if (higherOnly) return '';
 
   if (/(评论|时评|观察|专栏|述评|观点)/.test(text) && /(教辅|教材|出版|教育)/.test(text)) {
-    return '六、评教辅行业';
+    return sectionHeading(WEEKLY_SECTIONS[5]);
   }
   if (/(政策解读|解读|问答|图解|一图读懂|专家解读|答记者问|读懂|说明|释疑)/.test(text)) {
-    return '七、政策解读';
+    return sectionHeading(WEEKLY_SECTIONS[6]);
   }
   if (/(教辅|教材教辅|一科一辅|进校|评议目录|选用|送评|征订|校服)/.test(text)) {
-    return '二、K12教辅政策';
+    return sectionHeading(WEEKLY_SECTIONS[1]);
   }
-  if (/(出版社|人民教育出版社|教育出版传媒|捐赠|签署|签约|共建|局社合作)/.test(text)) {
-    return '四、局社合作';
+  if (/(教育\+AI|AI教育|AI教辅|AI合作|人工智能|智能体|大模型|智慧课堂|学习机|学练机|题库|科技公司|平台合作|硬件|数据服务)/i.test(text)) {
+    return sectionHeading(WEEKLY_SECTIONS[4]);
   }
-  if (/(科技公司|AI合作|人工智能合作|平台合作|硬件|数据服务)/i.test(text)) {
-    return '五、科技合作';
+  if (/(采购|招标|中标|成交|预算|政府采购|教育局|教委|学校|捐赠|签署|签约|共建|局社合作|公益项目|书香校园|阅读项目|配备|配送)/.test(text)) {
+    return sectionHeading(WEEKLY_SECTIONS[3]);
   }
-  if (/(出版|数字|智慧教育|人工智能|AI|题库|资源平台|数字教材|网络画板)/i.test(text)) {
-    return '三、出版数智化';
+  if (/(出版社|人民教育出版社|教育出版传媒|出版|数字|智慧教育|人工智能|AI|题库|资源平台|数字教材|网络画板|新书|新品|学习机|学练机|智能教辅)/i.test(text)) {
+    return sectionHeading(WEEKLY_SECTIONS[2]);
   }
   if (/(中小学|义务教育|基础教育|普通高中|招生|高考|中考|校外培训|双减|国门学校|青少年|未成年人|课后服务|校园餐|校服)/.test(text)) {
-    return '一、K12教育政策';
+    return sectionHeading(WEEKLY_SECTIONS[0]);
   }
   return '';
 }
 
 function descriptionForSection(section) {
-  switch (section) {
-    case '一、K12教育政策':
-      return '基础教育治理、招生考试或学校服务要求进入本周采编窗口，教辅与 K12 服务应按官方口径更新说明';
-    case '二、K12教辅政策':
-      return '地方教辅选用、进校管理或专项整治继续细化，目录、送选、征订和销售口径需按公告执行';
-    case '三、出版数智化':
-      return '教育数字化和平台应用继续推进，数字资源、题库和学习工具要强化可核验入口与内容审校';
-    case '四、局社合作':
-      return '教育部门、学校或公益机构与出版单位合作落地，适合跟踪资源共建和区域服务模式';
-    case '五、科技合作':
-      return '教育出版与技术服务协同信号增强，AI、平台、硬件和数据合作需同步关注合规边界';
-    case '六、评教辅行业':
-      return '公开评论提供了观察教辅、教育出版或 K12 服务变化的外部视角，可作为行业判断参考';
-    case '七、政策解读':
-      return '解读稿补充了政策背景、执行重点和地方落地口径，便于统一对外说明和产品合规表述';
-    default:
-      return '本周公开信息需要纳入采编跟踪，并配套更新业务说明';
+  const normalized = normalizeSectionTitle(section);
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[0])) {
+    return '基础教育治理、招生考试、暑期安排或学校服务要求进入本周采编窗口，教辅与 K12 服务应按官方口径更新说明';
   }
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[1])) {
+    return '地方教辅选用、评议目录、进校管理或专项整治继续细化，目录、送选、征订和销售口径需按公告执行';
+  }
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[2])) {
+    return '出版社和教辅公司加快产品、数字资源、AI 教辅和平台业务升级，内容审校与版权边界需要同步跟进';
+  }
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[3])) {
+    return '教育部门、学校或事业单位采购、共建或公益项目落地，适合跟踪资源供给、区域服务和政府采购窗口';
+  }
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[4])) {
+    return '教育出版与技术服务协同信号增强，AI、学习硬件、题库、平台和数据合作需同步关注合规边界';
+  }
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[5])) {
+    return '公开评论提供了观察教辅、教育出版或 K12 服务变化的外部视角，可作为行业判断参考';
+  }
+  if (normalized === sectionHeading(WEEKLY_SECTIONS[6])) {
+    return '解读稿补充了政策背景、执行重点和地方落地口径，便于统一对外说明和产品合规表述';
+  }
+  return '本周公开信息需要纳入采编跟踪，并配套更新业务说明';
 }
 
 function addGroupedItem(grouped, section, item) {
@@ -509,19 +514,19 @@ function descriptionForDigestItem(section, item) {
 function fallbackOfficialItems() {
   return [
     {
-      section: '一、K12教育政策',
+      section: sectionHeading(WEEKLY_SECTIONS[0]),
       title: '高招录取查询与征集志愿',
       desc: '录取期服务重点转向录取状态查询、征集志愿提醒、退档原因说明和通知书防伪，查询入口应指向官方平台',
       url: 'https://gaokao.chsi.com.cn/',
     },
     {
-      section: '一、K12教育政策',
+      section: sectionHeading(WEEKLY_SECTIONS[0]),
       title: '暑期校外培训监管查询',
       desc: '暑期教辅配套服务、训练营、AI 诊断和社群答疑需要与学科培训边界区分清楚，家长侧可通过全国监管平台核验机构和课程信息',
       url: 'https://xwpx.eduyun.cn/',
     },
     {
-      section: '三、出版数智化',
+      section: sectionHeading(WEEKLY_SECTIONS[2]),
       title: '国家智慧教育平台资源入口',
       desc: '暑期阅读、错题复盘、单元诊断和学习计划类产品应优先引用可核验资源入口，并保留人工审校和纠错机制',
       url: 'https://www.smartedu.cn/',

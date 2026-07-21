@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { weeklyTargetContext } from './weekly-date-utils.mjs';
+import { normalizeSectionTitle } from './weekly-sections.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -238,7 +239,7 @@ function parseWeeklySections(markdownText, maxBodyChars) {
   while (i < lines.length) {
     const trimmed = lines[i].trim();
     if (/^##\s/.test(trimmed) && !/^###\s/.test(trimmed)) {
-      const heading = trimmed.replace(/^##\s+/, '').replace(/\*\*/g, '').trim();
+      const heading = normalizeSectionTitle(trimmed.replace(/^##\s+/, '').replace(/\*\*/g, '').trim());
       if (heading.startsWith('附录：自动摘录') || heading.startsWith('十一、自动摘录')) {
         break;
       }
