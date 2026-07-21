@@ -588,6 +588,11 @@ function isVisibleWeeklyTitle(title) {
   return weekRankFromTitle(title) <= weekRankFromTitle(weeklyTargetContext().weekCode);
 }
 
+function isSkeletonWeeklyMarkdown(markdownText) {
+  const text = String(markdownText || '');
+  return /https:\/\/\.\.\./.test(text) || /^-\s+\*\*标题\*\*/m.test(text);
+}
+
 function main() {
   const centerMdPath = path.join(ROOT, '周报中心.md');
   const weeklyMdDir = path.join(ROOT, 'weekly');
@@ -611,10 +616,15 @@ function main() {
   for (const full of weeklyPaths) {
     const name = path.basename(full);
     const md = stripEmptyDigestSection(fs.readFileSync(full, 'utf8'));
-    const body = convertMarkdownToHtml(md);
     const base = path.basename(name, '.md');
     const htmlName = `${base}.html`;
     const outPath = path.join(weeklyHtmlDir, htmlName);
+    if (isSkeletonWeeklyMarkdown(md)) {
+      if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+      console.log(`Skipped skeleton: ${outPath}`);
+      continue;
+    }
+    const body = convertMarkdownToHtml(md);
     writeHtmlPage(base, body, outPath);
     console.log(`Generated: ${outPath}`);
 
