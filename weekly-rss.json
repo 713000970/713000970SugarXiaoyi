@@ -52,8 +52,8 @@
     }
   ],
   "parseRssMax": 120,
-  "maxItemsPerFeed": 8,
-  "maxItemsTotal": 24,
+  "maxItemsPerFeed": 12,
+  "maxItemsTotal": 48,
   "maxAgeDays": 8,
   "titleKeywords": [
     "教育",

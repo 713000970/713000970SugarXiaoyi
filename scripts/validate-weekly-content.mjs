@@ -23,6 +23,23 @@ const FORBIDDEN_PLACEHOLDER_RE =
   /本周公开稿未见|未检索到|未见新的|暂无|待核验|建议继续跟进|不作为本周新闻|不作为本周.*动态|采编口径说明|会务日历背景/;
 const FORBIDDEN_FIELD_RE =
   /^\s*-\s*(来源平台|来源|要点|影响判断|可跟进点|发布单位|发布时间|原文链接|核心条款|执行影响|出版社\/教辅公司|教育局\/学校\/事业单位|科技公司\/平台方|合作内容与期限|合作方向|本周动态|机会|风险|下周动作|公司\/机构|出版侧|数智化侧)：/m;
+const DISALLOWED_SOURCE_URLS = new Set([
+  'https://www.ppm.cn/',
+  'https://www.ppm.cn',
+  'https://www.ppmg.cn/',
+  'https://www.ppmg.cn',
+  'https://www.jyb.cn/',
+  'https://www.jyb.cn',
+  'https://finance.sina.com.cn/',
+  'https://finance.sina.com.cn',
+  'https://www.ithome.com/',
+  'https://www.ithome.com',
+  'https://www.pep.com.cn/',
+  'https://www.pep.com.cn',
+  'https://www.pep.com.cn/xwzx/',
+  'https://www.ccgp.gov.cn/',
+  'https://www.ccgp.gov.cn',
+]);
 
 function extractBusinessSections(md) {
   const m = md.match(new RegExp(`${BUSINESS_HEADING_PATTERN}[\\s\\S]*?(?=## 附录：自动摘录|## 十一、自动摘录|$)`));
@@ -200,6 +217,49 @@ function topLevelItems(business) {
   return [...business.matchAll(/^- .+$/gm)].map((m) => m[0]);
 }
 
+function sectionBlocks(business) {
+  const blocks = [];
+  const matches = [...business.matchAll(/^##\s+(.+)$/gm)];
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index;
+    const end = i + 1 < matches.length ? matches[i + 1].index : business.length;
+    blocks.push({
+      title: normalizeSectionTitle(matches[i][1]),
+      body: business.slice(start, end),
+    });
+  }
+  return blocks;
+}
+
+function sourceLinks(business) {
+  return [...business.matchAll(/\[原文\]\((https?:\/\/[^)]+)\)/g)].map((m) => m[1]);
+}
+
+function normalizeSourceUrl(url) {
+  try {
+    const u = new URL(url);
+    u.hash = '';
+    u.search = '';
+    return u.href.replace(/\/$/, '/');
+  } catch {
+    return String(url || '').trim();
+  }
+}
+
+function disallowedSourceLinks(business) {
+  return sourceLinks(business).filter((url) => {
+    const normalized = normalizeSourceUrl(url);
+    if (DISALLOWED_SOURCE_URLS.has(normalized)) return true;
+    try {
+      const u = new URL(url);
+      if (u.hostname === 'search.ccgp.gov.cn' && u.pathname.includes('/bxsearch')) return true;
+      return false;
+    } catch {
+      return false;
+    }
+  });
+}
+
 function extractPolicyInterpretationSection(md) {
   return extractSection(md, '七', '附录：自动摘录');
 }
@@ -208,11 +268,15 @@ function validate(md, filePath) {
   const business = extractBusinessSections(md);
   const headings = sectionTitles(business);
   const invalidSections = headings.filter((title) => !ALLOWED_SECTION_TITLES.has(title));
+  const emptySections = sectionBlocks(business)
+    .filter((section) => topLevelItems(section.body).length === 0)
+    .map((section) => section.title);
   const nestedBullets = [...business.matchAll(/^\s{2,}-\s+\S/gm)].length;
   const items = topLevelItems(business);
   const linkCount = (business.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
   const itemsWithoutLinks = items.filter((line) => !/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/.test(line));
   const malformedItems = items.filter((line) => !/^- \*\*[^*]+\*\*：.+\]\(https?:\/\/(?!\.\.\.)[^)]+\)\s*$/.test(line));
+  const badSourceLinks = disallowedSourceLinks(business);
   const { date: currentDate } = currentBeijingWeekContext();
   const weekStart = isoWeekStartFromFilePath(filePath) || startOfIsoWeek(currentDate);
   const currentWeekStart = startOfIsoWeek(currentDate);
@@ -236,6 +300,7 @@ function validate(md, filePath) {
   if (isSkeleton(md)) errors.push('business sections still look like the template skeleton');
   if (!headings.length) errors.push('expected at least one business section with real items');
   if (invalidSections.length) errors.push(`invalid section titles: ${invalidSections.join(', ')}`);
+  if (emptySections.length) errors.push(`empty sections are not allowed; omit them: ${emptySections.join(', ')}`);
   if (!items.length) errors.push('expected at least one concise news item');
   if (nestedBullets) errors.push(`nested bullet fields are not allowed, found ${nestedBullets}`);
   if (itemsWithoutLinks.length) errors.push(`items without source links: ${itemsWithoutLinks.slice(0, 3).join(' | ')}`);
@@ -247,6 +312,13 @@ function validate(md, filePath) {
   if (FORBIDDEN_FIELD_RE.test(business)) errors.push('field-style bullets are not allowed; use title + one-sentence intro + source link only');
   if (FORBIDDEN_PLACEHOLDER_RE.test(business)) errors.push('placeholder/no-news explanations are not allowed; omit that item or section');
   if (linkCount < items.length) errors.push(`expected one source link per item, found ${linkCount} links for ${items.length} items`);
+  if (badSourceLinks.length) {
+    errors.push(
+      `source links must point to concrete articles/notices, not home/search pages: ${badSourceLinks
+        .slice(0, 5)
+        .join(' | ')}`,
+    );
+  }
   if (oldNewsDates.length) {
     errors.push(
       `news sections contain sources older than the rolling collection window (${ymdFromDate(freshnessFloor)}): ${oldNewsDates

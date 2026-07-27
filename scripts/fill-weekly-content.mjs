@@ -20,7 +20,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const BUSINESS_HEADING_PATTERN = businessHeadingPatternSource();
 const SECTION_ORDER = sectionNames();
-const MIN_FALLBACK_ITEMS = 4;
+const MIN_FALLBACK_ITEMS = 10;
+const MAX_FALLBACK_ITEMS_PER_SECTION = 6;
 
 function loadFillConfig() {
   const p = path.join(ROOT, 'config', 'weekly-fill.json');
@@ -299,14 +300,16 @@ function buildPrompt({ weekCode, dateCode, weekStartCode, weekEndCode, digest, e
 2. 只输出业务板块，不要输出一级标题、「更新时间」行或附录。
 3. **可用章节与顺序固定**：${SECTION_ORDER.join(' → ')}。没有可核验信息的章节直接省略，不能写空章节。
 4. 每条资讯只允许一个顶层 bullet，格式固定：\`- **标题**：一句话说明这条信息为什么重要。[原文](url)\`。
-5. 事实须结合「本周 RSS 摘录」与采编关键词组织内容；优先覆盖政策原文/评议目录/采购招标/中标公示/出版社产品/技术合作等高价值线索；不得编造文件号、日期、机构、社媒账号。
-6. **本周新闻硬规则**：各板块只允许采用采编窗口（${weekStartCode} 至 ${weekEndCode}）内发布/更新的消息，或持续有效的官方入口。早于采编窗口的旧官宣、旧预备会、旧活动报道不得写入。
-7. **第二板块边界**：只写教辅材料目录、评议、选用、送评、征订、进校、封面标识、价格、出版资质、印制发行合规等政策/监管信息；普通 K12 政策不要放进第二板块。
-8. **第四板块边界**：教育局、学校或事业单位的教材教辅、图书、数字资源采购、招标、中标、合作共建和公益项目写入第四板块；只写本周发布的公告或公示。
-9. **第六板块硬规则**：「六、新闻评论/专家专栏评教辅行业」只能引用新闻评论、行业媒体评论、专家评论、专栏文章或署名评论文章；不得把官方入口、普通政策、会务预告或平台页面改写成我方行业判断。
-10. **第七板块硬规则**：「七、教育教辅政策解读文章」只能引用网站、公众号/服务号、行业媒体或专家发布的政策解读、问答、图解、一图读懂、专家解读类文章；不得把政策原文、普通新闻、官方入口改写成解读。
-11. **没有就不写**：不得输出“本周公开稿未见”“未检索到”“建议继续跟进”“不作为本周新闻”等占位、解释或建议。
-12. 正文禁止出现二级 bullet，禁止输出“来源平台、来源、要点、影响判断、可跟进点、发布单位、发布时间、合作方、合作内容、风险、机会、下周动作”等字段。
+5. 信息量要求：在有可核验信息时，优先输出 **8-14 条**；每个有信息的板块可写 **2-6 条**，不要只保留少数兜底条目。
+6. 事实须结合「本周 RSS 摘录」与采编关键词组织内容；优先覆盖政策原文/评议目录/采购招标/中标公示/出版社产品/局社合作/技术合作等高价值线索；不得编造文件号、日期、机构、社媒账号。
+7. **本周新闻硬规则**：各板块只允许采用采编窗口（${weekStartCode} 至 ${weekEndCode}）内发布/更新的消息，或持续有效的官方入口。早于采编窗口的旧官宣、旧预备会、旧活动报道不得写入。
+8. **第二板块边界**：只写教辅材料目录、评议、选用、送评、征订、进校、封面标识、价格、出版资质、印制发行合规等政策/监管信息；普通 K12 政策不要放进第二板块。
+9. **第四板块边界**：教育局、学校或事业单位的教材教辅、图书、数字资源采购、招标、中标、合作共建和公益项目写入第四板块；只写本周发布的公告或公示。
+10. **第五板块边界**：出版社/教辅公司与 AI、题库、学习机、平台、硬件、数据服务商的联合发布、签约、共建、产品接入和方案落地必须优先保留；这是固定跟踪重点。
+11. **第六板块硬规则**：「六、新闻评论/专家专栏评教辅行业」只能引用新闻评论、行业媒体评论、专家评论、专栏文章或署名评论文章；不得把官方入口、普通政策、会务预告或平台页面改写成我方行业判断。
+12. **第七板块硬规则**：「七、教育教辅政策解读文章」只能引用网站、公众号/服务号、行业媒体或专家发布的政策解读、问答、图解、一图读懂、专家解读类文章；不得把政策原文、普通新闻、官方入口改写成解读。
+13. **没有就不写**：不得输出“本周公开稿未见”“未检索到”“建议继续跟进”“不作为本周新闻”等占位、解释或建议。
+14. 正文禁止出现二级 bullet，禁止输出“来源平台、来源、要点、影响判断、可跟进点、发布单位、发布时间、合作方、合作内容、风险、机会、下周动作”等字段。
 
 ${searchHintsBlock || ''}${eventsBlock || ''}## 本周信息
 - 周次：${weekCode}
@@ -422,6 +425,52 @@ function parseDigestItems(digest) {
   return items;
 }
 
+function topLevelItemsInBlock(block) {
+  return [...String(block || '').matchAll(/^- .+$/gm)].map((m) => m[0]);
+}
+
+function sectionTitlesInBlock(block) {
+  return [...String(block || '').matchAll(/^##\s+(.+)$/gm)].map((m) => normalizeSectionTitle(m[1]));
+}
+
+function canReplaceBusinessSections(existingBlock, generatedBlock) {
+  const allowCompression = ['1', 'true', 'yes'].includes(
+    String(process.env.ALLOW_WEEKLY_CONTENT_COMPRESSION || '').toLowerCase(),
+  );
+  if (allowCompression) return true;
+
+  const existingItems = topLevelItemsInBlock(existingBlock);
+  const generatedItems = topLevelItemsInBlock(generatedBlock);
+  if (!existingItems.length) return true;
+  if (isSkeletonSections(existingBlock)) return true;
+
+  const minItems = Math.max(MIN_FALLBACK_ITEMS, Math.floor(existingItems.length * 0.8));
+  if (generatedItems.length < minItems) {
+    console.error(
+      `[fill] Refusing to replace ${existingItems.length} existing items with ${generatedItems.length} generated items. ` +
+        'Set ALLOW_WEEKLY_CONTENT_COMPRESSION=1 only when intentional.',
+    );
+    return false;
+  }
+
+  const existingSections = new Set(sectionTitlesInBlock(existingBlock));
+  const generatedSections = new Set(sectionTitlesInBlock(generatedBlock));
+  const protectedSections = [
+    sectionHeading(WEEKLY_SECTIONS[3]),
+    sectionHeading(WEEKLY_SECTIONS[4]),
+  ];
+  const removedProtected = protectedSections.filter((section) => existingSections.has(section) && !generatedSections.has(section));
+  if (removedProtected.length) {
+    console.error(
+      `[fill] Refusing to remove existing cooperation sections: ${removedProtected.join(', ')}. ` +
+        'Set ALLOW_WEEKLY_CONTENT_COMPRESSION=1 only when intentional.',
+    );
+    return false;
+  }
+
+  return true;
+}
+
 function inFallbackWindow(item, target) {
   const d = parseYmd(item.date);
   if (!d) return false;
@@ -491,7 +540,7 @@ function addGroupedItem(grouped, section, item) {
   if (!section || !item?.title || !item?.url) return;
   if (!grouped.has(section)) grouped.set(section, []);
   const bucket = grouped.get(section);
-  if (bucket.length >= 3) return;
+  if (bucket.length >= MAX_FALLBACK_ITEMS_PER_SECTION) return;
   if ([...grouped.values()].flat().some((x) => x.url === item.url)) return;
   bucket.push({ ...item, desc: item.desc || descriptionForDigestItem(section, item) });
 }
@@ -573,6 +622,10 @@ function buildFallbackMarkdown(md, target) {
 }
 
 function writeBusinessSections(weeklyPath, md, generated) {
+  const existing = extractBusinessSections(md);
+  if (!canReplaceBusinessSections(existing, generated)) {
+    process.exit(1);
+  }
   const header = extractHeader(md);
   const keepDigestAppendix = ['1', 'true', 'yes'].includes(String(process.env.KEEP_DIGEST_APPENDIX || '').toLowerCase());
   const tail = keepDigestAppendix ? extractDigestAppendixOnward(md) : '';
