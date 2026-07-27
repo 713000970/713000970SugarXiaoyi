@@ -109,6 +109,8 @@ function formatEventsForPrompt(calendar, refDate) {
     if (ev.organizer) lines.push(`  - 主办：${ev.organizer}`);
     if (ev.theme) lines.push(`  - 主题：${ev.theme}`);
     if (ev.url) lines.push(`  - 参考链接：${ev.url}`);
+    if (ev.sourcePublished) lines.push(`  - 参考链接发布时间：${ev.sourcePublished}`);
+    if (ev.sourceNote) lines.push(`  - 来源说明：${ev.sourceNote}`);
     if (ev.keywords?.length) lines.push(`  - 采编关键词：${ev.keywords.join('、')}`);
     if (ev.chapters?.length) lines.push(`  - 建议写入章节：第 ${ev.chapters.join('、')} 章`);
     lines.push('');
