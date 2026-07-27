@@ -46,9 +46,9 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 无需打开 Cursor；只要改 Markdown 并推送即可。
 
-## 5. 每周一 10:00 自动上线（GitHub Actions）
+## 5. 每周一 08:55 自动上线（GitHub Actions + Vercel Cron）
 
-仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 10:00（UTC 周一 02:00）依次执行：生成当周周报骨架 → 按 `config/weekly-rss.json` 拉取 RSS 写入「十一、自动摘录」→ `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 08:55 主触发，09:20 / 10:05 / 12:05 / 14:05 补偿触发，采集上一完整周（上周一到周日）信息，按七个行业维度生成正文、校验、构建、写入 `weekly-status.json`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。`vercel.json` 还配置了 Vercel Cron：北京时间周一 08:55 请求 `/api/trigger-weekly`，主动触发同一个 GitHub workflow，降低 GitHub schedule 漏跑风险。
 
 1. 打开 GitHub 仓库 **Settings → Actions → General**。
 2. 在 **Workflow permissions** 中选择 **Read and write permissions**，保存。
@@ -58,9 +58,15 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 若默认分支启用了 **Branch protection** 且禁止 Actions 直接推送，需要为该仓库放宽规则或为 `github-actions[bot]` 配置允许推送，否则需在保护分支上改用 **Pull Request** 流程（可再扩展本 workflow）。
 
+### Vercel Cron 兜底触发配置
+
+1. 在 GitHub 创建一个 Personal access token，授权目标仓库的 **Actions: write** 与 **Contents: read**（经典 token 可用 `repo` 权限）。
+2. 在 Vercel 项目 **Settings → Environment Variables** 新增 `CRON_SECRET` 和 `GH_WORKFLOW_TOKEN`。
+3. 重新部署一次 Vercel。之后 Vercel Cron 会在北京时间周一 08:55 调用 `/api/trigger-weekly`，主动触发 GitHub Actions。
+
 ## 6. Windows 计划任务（可选）
 
-本机 **`scripts/register_weekly_task.ps1`** 每周一 10:00 调用与云端相同的 **`create-weekly-report.mjs`**（通过 `create_weekly_report.ps1`）。**仅本机执行不会更新线上**，仍需 `git push` 才会触发 Vercel；线上自动发布以第 5 节 GitHub Actions 为准。
+本机 **`scripts/register_weekly_task.ps1`** 每周一 08:55 调用与云端相同的 **`run-weekly-full.mjs`**（通过 `create_weekly_report.ps1`）。**仅本机执行不会自动提交和推送**，仍需 `git push` 才会触发 Vercel；线上自动发布以第 5 节 GitHub Actions + Vercel Cron 为准。
 
 ## 7. 故障排除（访问域名出现 `404 NOT_FOUND`）
 

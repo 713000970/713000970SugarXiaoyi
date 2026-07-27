@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$RootPath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    [string]$RootPath = $PSScriptRoot
 )
 
 Set-StrictMode -Version Latest
@@ -10,7 +10,7 @@ if (-not $node) {
     throw "Node.js is required. Install from https://nodejs.org then run: npm run weekly:create"
 }
 
-$scriptPath = Join-Path $PSScriptRoot "run-weekly-full.mjs"
+$scriptPath = Join-Path $PSScriptRoot "scripts\run-weekly-full.mjs"
 if (-not (Test-Path -LiteralPath $scriptPath)) { throw "Missing file: $scriptPath" }
 
 Push-Location $RootPath

@@ -4,6 +4,12 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": ".",
+  "crons": [
+    {
+      "path": "/api/trigger-weekly",
+      "schedule": "55 0 * * 1"
+    }
+  ],
   "redirects": [
     {
       "source": "/favicon.ico",

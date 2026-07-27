@@ -18,7 +18,7 @@ Windows 也可运行 `scripts/generate_html.ps1`（内部调用同一 Node 脚�
 
 ## 每周骨架（云端推荐）
 
-GitHub Actions：`.github/workflows/weekly-autopublish.yml`（北京时间每周一 08:55 自动采集上一周一到周日的信息，按七个行业维度生成有内容的板块、提交并触发 Vercel）。首次使用请在仓库 **Settings → Actions → General** 将 **Workflow permissions** 设为 **Read and write permissions**（详见部署文档第 5 节）。
+GitHub Actions：`.github/workflows/weekly-autopublish.yml`（北京时间每周一 08:55 自动采集上一周一到周日的信息，按七个行业维度生成有内容的板块、提交并触发 Vercel）。同时 `vercel.json` 配置了 `/api/trigger-weekly` 的 Vercel Cron，用来在 08:55 主动触发 GitHub workflow，降低 GitHub schedule 漏跑风险。首次使用请在仓库 **Settings → Actions → General** 将 **Workflow permissions** 设为 **Read and write permissions**，并在 Vercel 配置 `CRON_SECRET`、`GH_WORKFLOW_TOKEN`（详见部署文档第 5 节）。
 
 本机一键（与 CI 相同：**骨架 + RSS 自动摘录 + build**；摘录源见 `config/weekly-rss.json`）：
 

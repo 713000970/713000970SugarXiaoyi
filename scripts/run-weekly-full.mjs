@@ -35,3 +35,5 @@ const r = spawnSync(node, [buildScript], { cwd: ROOT, stdio: 'inherit' });
 if (r.status !== 0) {
   throw new Error(`build.mjs exited ${r.status === null ? 'null' : r.status}`);
 }
+
+run('write-weekly-status.mjs');

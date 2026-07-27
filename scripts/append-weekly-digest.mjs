@@ -65,6 +65,23 @@ function normalizeHtmlDate(raw) {
   return `${m[1]}-${pad2(Number(m[2]))}-${pad2(Number(m[3]))}`;
 }
 
+function extractDetailPubDate(html) {
+  const raw = String(html || '');
+  const metaPatterns = [
+    /<meta[^>]+(?:name|property)=["']?(?:PubDate|pubdate|publishdate|PublishDate|date|article:published_time|og:published_time)["']?[^>]+content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']?(?:PubDate|pubdate|publishdate|PublishDate|date|article:published_time|og:published_time)["']?[^>]*>/i,
+  ];
+  for (const re of metaPatterns) {
+    const m = raw.match(re);
+    const d = normalizeHtmlDate(m?.[1] || '');
+    if (d) return d;
+  }
+
+  const text = decodeHtmlEntities(stripCDATA(raw)).replace(/\s+/g, ' ');
+  const labelMatch = text.match(/(?:发布时间|发布日期|发稿时间|时间|PubDate)[：:\s]*(20\d{2}[-年\/.]\d{1,2}[-月\/.]\d{1,2})/i);
+  return normalizeHtmlDate(labelMatch?.[1] || '');
+}
+
 function ymdParts(date) {
   return {
     yyyy: String(date.getFullYear()),
@@ -103,9 +120,11 @@ function parseHtmlItems(html, pageUrl, max) {
     if (/^(政策解读|通知公告|政策文件|信息公开|要闻信息|业务动态|地方工作|结果公示|新闻中心|新品发布|产品与服务|服务与支持|关于我们)$/.test(title)) continue;
     if (/^第\d{2}版\s*[:：]/.test(title)) continue;
     const context = cleaned.slice(Math.max(0, m.index - 140), Math.min(cleaned.length, re.lastIndex + 220));
-    const pubDate = normalizeHtmlDate(link) || normalizeHtmlDate(context);
+    const linkDate = normalizeHtmlDate(link);
+    const contextDate = normalizeHtmlDate(context);
+    const pubDate = linkDate || contextDate;
     if (!pubDate) continue;
-    items.push({ title, link, pubDate });
+    items.push({ title, link, pubDate, dateSource: linkDate ? 'link' : 'context' });
   }
   return items;
 }
@@ -381,6 +400,19 @@ for (const p of cfg.htmlPages) {
       if (addedForPage >= cfg.maxItemsPerFeed) break;
       if (seen.has(it.link)) continue;
       seen.add(it.link);
+      const initialTs = itemTimestamp(it.pubDate);
+      if (!initialTs) continue;
+      if (!isWithinTargetWeek(initialTs, target)) continue;
+      if (isFutureTimestamp(initialTs)) continue;
+      if (it.dateSource !== 'link') {
+        try {
+          const detailHtml = await fetchText(it.link, 12000);
+          const detailDate = extractDetailPubDate(detailHtml);
+          if (detailDate) it.pubDate = detailDate;
+        } catch (e) {
+          console.warn(`[digest] unable to verify detail date for ${it.link}: ${e.message}`);
+        }
+      }
       const ts = itemTimestamp(it.pubDate);
       if (!ts) continue;
       if (!isWithinTargetWeek(ts, target)) continue;

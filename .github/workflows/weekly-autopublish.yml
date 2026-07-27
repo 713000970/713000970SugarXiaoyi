@@ -6,9 +6,13 @@ name: Weekly skeleton and publish
 
 on:
   schedule:
-    # GitHub cron 使用 UTC：北京时间周一 08:55（主）+ 09:10（备用）
+    # GitHub cron 使用 UTC：北京时间周一 08:55（主）+ 多轮补偿。
+    # GitHub schedule 不是准点 SLA，多触发几次可降低漏发概率；脚本会跳过已有正文。
     - cron: "55 0 * * 1"
-    - cron: "10 1 * * 1"
+    - cron: "20 1 * * 1"
+    - cron: "5 2 * * 1"
+    - cron: "5 4 * * 1"
+    - cron: "5 6 * * 1"
   workflow_dispatch:
     inputs:
       force_fill:
@@ -55,7 +59,8 @@ jobs:
       - name: Fill concise business sections
         env:
           CI: "true"
-          FORCE_WEEKLY_FILL: ${{ inputs.force_fill && 'true' || 'false' }}
+          WEEKLY_PUBLISH_SOURCE: "github-actions"
+          FORCE_WEEKLY_FILL: ${{ github.event_name == 'workflow_dispatch' && inputs.force_fill == true && 'true' || 'false' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
@@ -67,6 +72,11 @@ jobs:
 
       - name: Build site
         run: npm run build
+
+      - name: Write publish status
+        env:
+          WEEKLY_PUBLISH_SOURCE: "github-actions"
+        run: node scripts/write-weekly-status.mjs
 
       - name: Commit and push if changed
         env:

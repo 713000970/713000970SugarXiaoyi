@@ -57,6 +57,12 @@ jobs:
       - name: Build site
         run: npm run build
 
+      - name: Write publish status
+        env:
+          WEEKLY_PUBLISH_SOURCE: "github-actions-force-refill"
+          FORCE_WEEKLY_STATUS: "true"
+        run: node scripts/write-weekly-status.mjs
+
       - name: Commit and push if changed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

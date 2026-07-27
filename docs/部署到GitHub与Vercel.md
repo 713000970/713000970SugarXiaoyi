@@ -46,9 +46,11 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 无需打开 Cursor；只要改 Markdown 并推送即可。
 
-## 5. 每周一 08:55 自动上线（GitHub Actions）
+## 5. 每周一 08:55 自动上线（GitHub Actions + Vercel Cron）
 
-仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 08:55 运行，09:10 备用（UTC 周一 00:55 / 01:10），依次执行：生成上一完整周周报骨架 → 按 `config/weekly-rss.json` 拉取上一周一到周日信息写入「附录：自动摘录」→ **AI 按七板块撰写正文**（需 Secret，见下；无 Secret 时使用兜底正文）→ 校验非空框架 → `npm run build`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+仓库已包含 **`.github/workflows/weekly-autopublish.yml`**：北京时间每周一 08:55 主触发，09:20 / 10:05 / 12:05 / 14:05 补偿触发，依次执行：生成上一完整周周报骨架 → 按 `config/weekly-rss.json` 拉取上一周一到周日信息写入「附录：自动摘录」→ **AI 按七板块撰写正文**（需 Secret，见下；无 Secret 时使用兜底正文）→ 校验非空框架 → `npm run build` → 写入 `weekly-status.json`，若有变更则 **commit 并 push**，从而触发 Vercel 重新部署。
+
+由于 GitHub schedule 不是准点 SLA，本项目同时在 **`vercel.json`** 配置了 Vercel Cron：北京时间周一 08:55 请求 `/api/trigger-weekly`，由该接口调用 GitHub `workflow_dispatch` 主动触发同一个工作流。
 
 ### 每周一自动「满篇干货」（AI 填稿）
 
@@ -58,6 +60,15 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 2. 范例文风来自 `config/weekly-fill.json` 的 `exampleWeeklyPath`（默认 `weekly/2026-W21-周报.md`），可换成你满意的一期。
 3. 本地联调：`npm run weekly:create`（= 骨架 + RSS + AI 填稿 + build）；仅重跑 AI：`npm run weekly:fill`（已有人工正文时默认跳过，强制覆盖设 `FORCE_WEEKLY_FILL=1`）。
 4. **质量说明**：成稿质量取决于 RSS 是否拉得到近 21 天条目；教育部/RSSHub 在 CI 上常失败时，建议在 `config/weekly-rss.json` 配置自建 RSSHub 或稳定源。公众号/服务号请填入 `wechatFeeds`（直接 RSS URL，或 `rssHubBase + biz + hid + cid`），只采标题、日期、原文链接；正文按七个行业维度归类，重点覆盖 K12 政策、教辅政策、出版社/教辅公司数智化、局社采购合作、科技合作、行业评论和政策解读，没有可靠本周信息就省略。重要发布前建议人工审阅政策、采购和评论类条目。
+
+### Vercel Cron 兜底触发配置
+
+1. 在 GitHub 创建一个 Personal access token，授权目标仓库的 **Actions: write** 与 **Contents: read**（经典 token 可用 `repo` 权限）。
+2. 在 Vercel 项目 **Settings → Environment Variables** 新增：
+   - `CRON_SECRET`：任意长随机字符串，用于保护 `/api/trigger-weekly`。
+   - `GH_WORKFLOW_TOKEN`：上一步 GitHub token。
+   - 可选：`GH_REPOSITORY=713000970/713000970SugarXiaoyi`、`GH_WORKFLOW_FILE=weekly-autopublish.yml`、`GH_WORKFLOW_REF=main`。
+3. 重新部署一次 Vercel。之后 Vercel Cron 会在北京时间周一 08:55 调用接口，主动触发 GitHub Actions。
 
 1. 打开 GitHub 仓库 **Settings → Actions → General**。
 2. 在 **Workflow permissions** 中选择 **Read and write permissions**，保存。
@@ -69,7 +80,7 @@ Windows 下沿用 **`scripts/generate_html.ps1`** 也会调用同一 Node 脚本
 
 ## 6. Windows 计划任务（可选）
 
-本机 **`scripts/register_weekly_task.ps1`** 每周一 08:55 调用与云端相同的 **`create-weekly-report.mjs`**（通过 `create_weekly_report.ps1`）。**仅本机执行不会更新线上**，仍需 `git push` 才会触发 Vercel；线上自动发布以第 5 节 GitHub Actions 为准。
+本机 **`scripts/register_weekly_task.ps1`** 每周一 08:55 调用与云端相同的 **`run-weekly-full.mjs`**（通过 `create_weekly_report.ps1`），可作为本机兜底检查。**仅本机执行不会自动提交和推送**，仍需 `git add` / `git commit` / `git push` 才会触发 Vercel；线上自动发布以第 5 节 GitHub Actions + Vercel Cron 为准。
 
 ## 7. 故障排除（访问域名出现 `404 NOT_FOUND`）
 
