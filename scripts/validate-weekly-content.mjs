@@ -271,7 +271,7 @@ function validate(md, filePath) {
   const emptySections = sectionBlocks(business)
     .filter((section) => topLevelItems(section.body).length === 0)
     .map((section) => section.title);
-  const nestedBullets = [...business.matchAll(/^\s{2,}-\s+\S/gm)].length;
+  const nestedBullets = [...business.matchAll(/^[ \t]{2,}-\s+\S/gm)].length;
   const items = topLevelItems(business);
   const linkCount = (business.match(/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/g) || []).length;
   const itemsWithoutLinks = items.filter((line) => !/\]\(https?:\/\/(?!\.\.\.)[^)]+\)/.test(line));
