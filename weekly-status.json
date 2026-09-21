@@ -1,10 +1,10 @@
 {
-  "weekCode": "2026-W37",
-  "weekStart": "2026-09-07",
-  "weekEnd": "2026-09-13",
-  "publishDate": "2026-09-14",
-  "publishedAtBeijing": "2026-09-14T13:34:32+08:00",
-  "source": "manual-w37",
-  "markdown": "weekly/2026-W37-周报.md",
-  "html": "weekly-html/2026-W37-周报.html"
+  "weekCode": "2026-W38",
+  "weekStart": "2026-09-14",
+  "weekEnd": "2026-09-20",
+  "publishDate": "2026-09-21",
+  "publishedAtBeijing": "2026-09-21T17:52:15+08:00",
+  "source": "github-actions",
+  "markdown": "weekly/2026-W38-周报.md",
+  "html": "weekly-html/2026-W38-周报.html"
 }
