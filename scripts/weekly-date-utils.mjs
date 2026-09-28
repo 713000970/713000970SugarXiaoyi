@@ -1,8 +1,14 @@
-export function pad2(n) {
+﻿export function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
 export function currentBeijingDate(now = new Date()) {
+  // Optional deterministic override for backfill runs: WEEKLY_TODAY=YYYY-MM-DD
+  const override = String(process.env.WEEKLY_TODAY || '').trim();
+  const overrideMatch = override.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (overrideMatch) {
+    return new Date(Number(overrideMatch[1]), Number(overrideMatch[2]) - 1, Number(overrideMatch[3]));
+  }
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Shanghai',
     year: 'numeric',

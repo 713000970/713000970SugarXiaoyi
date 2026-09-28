@@ -6,3 +6,31 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# ---- 以下由 wharf 追加 ----
+# 依赖和构建产物
+dist/
+build/
+out/
+target/
+.next/
+.nuxt/
+.turbo/
+.parcel-cache/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 编辑器、系统、日志
+.idea/
+.vscode/
+
+# 自助部署平台的本地绑定
+.wharf/
