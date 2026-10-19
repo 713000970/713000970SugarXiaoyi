@@ -1,10 +1,10 @@
 {
-  "weekCode": "2026-W40",
-  "weekStart": "2026-09-28",
-  "weekEnd": "2026-10-04",
-  "publishDate": "2026-10-05",
-  "publishedAtBeijing": "2026-10-08T09:21:09+08:00",
-  "source": "local",
-  "markdown": "weekly/2026-W40-周报.md",
-  "html": "weekly-html/2026-W40-周报.html"
+  "weekCode": "2026-W42",
+  "weekStart": "2026-10-12",
+  "weekEnd": "2026-10-18",
+  "publishDate": "2026-10-19",
+  "publishedAtBeijing": "2026-10-19T14:16:45+08:00",
+  "source": "github-actions",
+  "markdown": "weekly/2026-W42-周报.md",
+  "html": "weekly-html/2026-W42-周报.html"
 }
