@@ -1,10 +1,10 @@
 {
-  "weekCode": "2026-W44",
-  "weekStart": "2026-10-26",
-  "weekEnd": "2026-11-01",
-  "publishDate": "2026-11-02",
-  "publishedAtBeijing": "2026-11-02T20:15:23+08:00",
+  "weekCode": "2026-W45",
+  "weekStart": "2026-11-02",
+  "weekEnd": "2026-11-08",
+  "publishDate": "2026-11-09",
+  "publishedAtBeijing": "2026-11-09T16:02:35+08:00",
   "source": "github-actions",
-  "markdown": "weekly/2026-W44-周报.md",
-  "html": "weekly-html/2026-W44-周报.html"
+  "markdown": "weekly/2026-W45-周报.md",
+  "html": "weekly-html/2026-W45-周报.html"
 }
